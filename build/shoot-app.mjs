@@ -20,10 +20,15 @@ if (!CHROME) { console.error("ไม่พบเบราว์เซอร์")
 const ROOT = "out";
 if (!existsSync(ROOT)) { console.error("ไม่พบ out/ — ต้องรัน npm run build ก่อน"); process.exit(1); }
 
-const MODE = process.argv[2] === "mobile" ? "mobile" : "desktop";
-const VIEW = MODE === "mobile"
-  ? { width: 414, height: 896, deviceScaleFactor: 2 }
-  : { width: 1440, height: 900, deviceScaleFactor: 1 };
+/* small = มือถือรุ่นเล็กที่ยังใช้กันเยอะ จอเตี้ยกว่ามือถือรุ่นใหญ่เกือบสองร้อยพิกเซล
+   ถ้าหน้าไหนจะล้นจอ จะล้นที่ขนาดนี้ก่อนเสมอ */
+const VIEWS = {
+  desktop: { width: 1440, height: 900, deviceScaleFactor: 1 },
+  mobile:  { width: 414, height: 896, deviceScaleFactor: 2 },
+  small:   { width: 360, height: 640, deviceScaleFactor: 2 }
+};
+const MODE = VIEWS[process.argv[2]] ? process.argv[2] : "desktop";
+const VIEW = VIEWS[MODE];
 const OUT = `dist/shots/${MODE}`;
 mkdirSync(OUT, { recursive: true });
 

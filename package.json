@@ -14,7 +14,7 @@
     "check": "npm run build && npm run verify",
     "manual": "node build/make-manual.mjs",
     "qr": "node build/make-qr.mjs",
-    "shots": "node build/shoot-app.mjs desktop && node build/shoot-app.mjs mobile"
+    "shots": "node build/shoot-app.mjs desktop && node build/shoot-app.mjs mobile && node build/shoot-app.mjs small"
   },
   "devDependencies": {
     "jsqr": "^1.4.0",

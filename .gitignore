@@ -4,3 +4,4 @@ out/
 dist/
 .vercel/
 .env*
+*.zip
