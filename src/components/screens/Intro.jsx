@@ -36,7 +36,11 @@ export default function Intro({ labels, onStart, onPaths }) {
   return (
     <section className="screen intro">
       <div className="intro__text">
-        <p className="code intro__eyebrow">แม่หมอ VR · IT · RMUTL Lampang</p>
+        {/* ไทยกับอังกฤษอยู่บรรทัดเดียวกัน จึงแยกฟอนต์กัน
+            ถ้าคลุม mono ทั้งบรรทัด letter-spacing จะดึงสระไทยหลุดจากพยัญชนะ */}
+        <p className="intro__eyebrow">
+          แม่หมอ VR <span className="code">· IT · RMUTL Lampang</span>
+        </p>
 
         <h1 className="intro__title">
           <span>ชูนิ้ว อ่าน<em>ผังดวง</em></span>

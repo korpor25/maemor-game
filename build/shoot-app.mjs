@@ -87,8 +87,18 @@ const snap = async name => {
   await page.screenshot({ path: `${OUT}/${name}.png` });
   console.log(`  ถ่าย ${name}`);
 };
+/* เตือนเมื่อการ์ดสูงเกินจอ — บั๊กที่เจอบ่อยสุดคือเนื้อหาล้นแล้วปุ่มท้ายการ์ดหายไป
+   ตอนนี้การ์ดเลื่อนในตัวเองได้ ผู้เล่นจึงยังกดได้ แต่ผิดจากที่ออกแบบไว้ว่าจบในจอเดียว */
+const overflow = async () => page.evaluate(() => {
+  const el = document.querySelector(".screen");
+  if (!el) return 0;
+  return Math.max(0, el.scrollHeight - el.clientHeight);
+});
+
 const shot = async name => {
   await wait(1200);                       // ปล่อยให้แอนิเมชันและฉาก 3D เข้าที่ก่อน
+  const over = await overflow();
+  if (over > 8) console.log(`  ! ${name} ล้นจอ ${over}px — ต้องเลื่อนถึงจะเห็นครบ`);
   await snap(name);
 };
 
@@ -109,6 +119,20 @@ await page.evaluate(() => [...document.querySelectorAll("button")]
 await wait(500);
 /* ปิดกล้องแล้วรอจนม่านขึ้นจริง ไม่ใช่เดาเวลา
    ถ้ากล้องยังเดินอยู่ โมเดลนับนิ้วจะกินเธรดหลักจนการอัปเดตหน้าช้ากว่าที่รอไว้ */
+/* ถ่ายตอนกล้องยังเปิดอยู่ก่อน จะได้เห็นว่าเวทีกล้องมีขนาดจริง ไม่ยุบเป็นศูนย์
+   กล้องปลอมของ Chrome เป็นภาพทดสอบ ไม่มีมือ แต่ขนาดกล่องเชื่อถือได้ */
+await until(() => has(".cam__stage"), "เวทีกล้อง");
+await wait(2500);
+await shot("2a-survey-cam");
+const camBox = await page.evaluate(() => {
+  const r = document.querySelector(".cam__stage")?.getBoundingClientRect();
+  return r ? `${Math.round(r.width)}×${Math.round(r.height)}` : "ไม่พบ";
+});
+console.log(`  ขนาดเวทีกล้อง ${camBox}`);
+if (camBox === "ไม่พบ" || parseInt(camBox) < 120) {
+  throw new Error("เวทีกล้องเล็กผิดปกติ: " + camBox);
+}
+
 await page.evaluate(() => document.querySelector(".camtoggle.is-on")?.click());
 await until(() => has(".camtoggle:not(.is-on)"), "ปุ่มกล้องเปลี่ยนเป็นปิด");
 await wait(400);
@@ -161,10 +185,15 @@ await page.evaluate(() => [...document.querySelectorAll("button")]
   .find(b => b.textContent.trim() === "บันทึก")?.click());
 await shot("6-panel");
 
+/* ปิดแผงสถิติ แล้วสลับเป็นโหมดกลางคืนจากปุ่มบนแถบบน
+   จับปุ่มจากป้ายจริง ไม่ใช่ข้อความเก่าอย่าง theme[...] ที่ไม่มีแล้ว */
 await page.evaluate(() => {
-  [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "ปิด")?.click();
-  [...document.querySelectorAll("button")].find(b => b.textContent.startsWith("theme["))?.click();
+  [...document.querySelectorAll(".panel button")].find(b => b.textContent.trim() === "ปิด")?.click();
+  [...document.querySelectorAll("button")]
+    .find(b => b.textContent.trim() === "กลางคืน")?.click();
 });
+await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === "night",
+            "โหมดกลางคืน", 6000, 100);
 await shot("7-night");
 
 await browser.close();
