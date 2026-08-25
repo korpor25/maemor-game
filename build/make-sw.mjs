@@ -28,12 +28,22 @@ const version = hash.digest("hex").slice(0, 10);
 /* ไม่ precache "./index.html" ตรง ๆ เพราะโฮสต์หลายเจ้า (Vercel และ serve) ตอบ
    /index.html ด้วย redirect ไป / — และ Cache.put ปฏิเสธ response ที่ถูก redirect
    ถ้าใส่ไว้ cache.addAll จะ throw ทั้งชุด แล้ว service worker ติดตั้งไม่สำเร็จเลย
-   ออฟไลน์จะพังเงียบ ๆ โดยไม่มีอะไรฟ้อง จึงเก็บเอกสารผ่าน "./" อย่างเดียว */
-const assets = ["./", ...files.filter(f => f !== "index.html").map(f => "./" + f)];
+   ออฟไลน์จะพังเงียบ ๆ โดยไม่มีอะไรฟ้อง จึงเก็บเอกสารผ่าน "./" อย่างเดียว
+
+   ไฟล์โมเดลนับนิ้วใน assets/mp รวมกันราว 19 เมกะไบต์ ใหญ่เกินกว่าจะดึงตอนติดตั้ง
+   ถ้าใส่ไว้ ผู้ที่สแกน QR จะต้องรอโหลดจนครบก่อนถึงจะเริ่มเล่นได้
+   จึงปล่อยให้ตัวจัดการ fetch เก็บเข้าแคชตอนใช้งานจริงครั้งแรกแทน
+   หลังเล่นจบรอบแรก เครื่องนั้นก็ใช้กล้องแบบออฟไลน์ได้แล้ว
+   แต่เลขรุ่นยังคำนวณรวมไฟล์เหล่านี้ด้วย พอโมเดลเปลี่ยนแคชเก่าจึงถูกล้างตามไปด้วย */
+const isLazy = f => f.startsWith("assets/mp/");
+const assets = ["./", ...files.filter(f => f !== "index.html" && !isLazy(f)).map(f => "./" + f)];
+const lazyCount = files.filter(isLazy).length;
 
 const sw = `/* สร้างอัตโนมัติโดย build/make-sw.mjs — อย่าแก้ไฟล์นี้ด้วยมือ
-   กลยุทธ์: precache ทุกไฟล์ตอนติดตั้ง แล้วเสิร์ฟจากแคชก่อนเสมอ
-   แอปนี้ไม่มีข้อมูลจากเซิร์ฟเวอร์เลย แคชจึงเป็นแหล่งความจริงได้เต็มตัว
+   กลยุทธ์สองชั้น:
+     · ตัวแอป (ไม่ถึงหนึ่งเมกะไบต์) เก็บเข้าแคชตั้งแต่ตอนติดตั้ง เปิดปุ๊บเล่นได้ปั๊บ
+     · โมเดลนับนิ้ว (สิบเก้าเมกะไบต์) เก็บตอนถูกเรียกใช้ครั้งแรก
+   เสิร์ฟจากแคชก่อนเสมอ แอปนี้ไม่มีข้อมูลจากเซิร์ฟเวอร์เลย แคชจึงเป็นแหล่งความจริงได้เต็มตัว
    เลขรุ่นคำนวณจากเนื้อไฟล์ พอมีไฟล์ไหนเปลี่ยน แคชเก่าจะถูกลบทั้งชุด */
 
 const VERSION = ${JSON.stringify(version)};
@@ -103,5 +113,8 @@ self.addEventListener("fetch", event => {
 `;
 
 writeFileSync(join(ROOT, "sw.js"), sw);
-const bytes = files.reduce((s, f) => s + statSync(join(ROOT, f)).size, 0);
-console.log(`sw.js: ${files.length} ไฟล์ · ${(bytes / 1024).toFixed(0)} KB · รุ่น ${version}`);
+const size = list => list.reduce((s, f) => s + statSync(join(ROOT, f)).size, 0);
+const core = files.filter(f => !isLazy(f));
+console.log(`sw.js รุ่น ${version}`);
+console.log(`  แคชตอนติดตั้ง : ${core.length} ไฟล์ · ${(size(core) / 1024).toFixed(0)} KB`);
+console.log(`  แคชตอนใช้จริง : ${lazyCount} ไฟล์ · ${(size(files.filter(isLazy)) / 1048576).toFixed(1)} MB (โมเดลนับนิ้ว)`);

@@ -21,7 +21,8 @@ g.matchMedia = () => ({ matches: false, addEventListener() { }, removeEventListe
 g.SVGElement.prototype.getBBox = () => ({ x: 0, y: 0, width: 100, height: 100 });
 g.SVGElement.prototype.getTotalLength = () => 420;
 g.HTMLCanvasElement.prototype.getContext = () => ({
-  drawImage() { },
+  drawImage() { }, clearRect() { }, beginPath() { }, moveTo() { }, lineTo() { },
+  stroke() { }, fill() { }, arc() { },
   getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(w * h * 4) })
 });
 g.navigator.mediaDevices = { getUserMedia: async () => { throw new Error("no camera in test"); } };
@@ -196,11 +197,24 @@ step("จบรอบในโหมดบูธได้โดยไม่ม�
   if (active() !== "screen-result") throw new Error("ฉากที่แสดงคือ " + active());
   if (errors.length > errorsBeforeKiosk) throw new Error("มี error เกิดขึ้นระหว่างรอบนี้");
 });
-step("ช่องกล้องตรงกับจำนวนตัวเลือก", () => {
+step("เวทีกล้องแสดงอยู่ทั้งสองโหมด", () => {
   $("btnAgain").click();
-  const zones = $("camZones").children.length;
-  const opts = $("choices").children.length;
-  if (zones !== opts) throw new Error(`ช่องกล้อง ${zones} แต่ตัวเลือก ${opts}`);
+  if ($("cam").classList.contains("u-hidden")) throw new Error("เวทีกล้องถูกซ่อนในโหมดบูธ");
+  $("btnKiosk").click();                       // กลับเป็นโหมดมือถือ
+  if ($("cam").classList.contains("u-hidden")) throw new Error("เวทีกล้องถูกซ่อนในโหมดมือถือ");
+});
+step("กล้องถูกปฏิเสธแล้วยังเล่นต่อได้", () => {
+  /* เทสต์นี้ไม่มีกล้อง getUserMedia จึงโยน error ตั้งแต่ต้น
+     ม่านต้องบอกผู้เล่นว่าเกิดอะไรขึ้น และตัวเลือกที่แตะได้ต้องยังใช้งานได้ */
+  if ($("camVeil").classList.contains("is-gone")) throw new Error("ม่านถูกซ่อนทั้งที่กล้องใช้ไม่ได้");
+  if (!$("camVeilTitle").textContent.trim()) throw new Error("ม่านไม่มีข้อความอธิบาย");
+  if (!$("choices").children.length) throw new Error("ไม่มีตัวเลือกให้แตะ");
+});
+step("ปิดและเปิดกล้องได้", () => {
+  $("btnCamToggle").click();
+  if (!$("cam").classList.contains("u-hidden")) throw new Error("ปิดกล้องแล้วเวทียังแสดงอยู่");
+  $("btnCamToggle").click();
+  if ($("cam").classList.contains("u-hidden")) throw new Error("เปิดกล้องแล้วเวทีไม่กลับมา");
 });
 
 console.log();

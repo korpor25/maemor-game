@@ -6,11 +6,12 @@
   "description": "ผังดวงอาชีพ — แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล (PWA เล่นออฟไลน์ได้)",
   "scripts": {
     "build": "node build/make-icons.mjs && node build/make-sw.mjs",
-    "verify": "node build/verify.mjs && node build/check-balance.mjs && node build/smoke.mjs",
+    "verify": "node build/verify.mjs && node build/check-balance.mjs && node build/test-fingers.mjs && node build/smoke.mjs",
     "check": "npm run build && npm run verify",
     "dev": "npx --yes serve -l 4173 app/public",
     "qr": "node build/make-qr.mjs",
-    "smoke": "node build/smoke.mjs"
+    "smoke": "node build/smoke.mjs",
+    "manual": "node build/make-manual.mjs"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

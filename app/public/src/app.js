@@ -1,12 +1,12 @@
 /* ============================================================
    ผังดวงอาชีพ — ตัวควบคุมหลัก
-   ผูกข้อมูล (data.js) เข้ากับแผ่นผังดวง (chart.js) กล้อง (vision.js)
+   ผูกข้อมูล (data.js) เข้ากับแผ่นผังดวง (chart.js) กล้องนับนิ้ว (hands.js)
    และบันทึกบูธ (stats.js) แล้วคุมลำดับฉากทั้งหมด
    ============================================================ */
 
 import { PATHS, QUESTIONS, AXES, CEILING } from "./data.js";
 import { FateChart, renderPathGlyph, renderSkyRim } from "./chart.js";
-import { HandVision } from "./vision.js";
+import { HandCounter, prefetchModel, HAND_BONES } from "./hands.js";
 import { appendLog, clearLog, renderPanel, downloadCsv } from "./stats.js";
 
 const $ = id => document.getElementById(id);
@@ -122,8 +122,7 @@ function renderQuestion() {
 
   $("btnBack").classList.toggle("u-hidden", state.qi === 0);
 
-  buildCamZones(q.options.length);
-  vision?.setZones(q.options.length);
+  hands?.setRange(q.options.length);
   chartSurvey.setValues(normalised(), { duration: 480 });
 }
 
@@ -294,82 +293,139 @@ function renderPaths() {
   }));
 }
 
-/* ---------- กล้องโหมดบูธ ---------- */
-let vision = null;
+/* ---------- กล้องนับนิ้ว — วิธีเลือกคำตอบหลักของกิจกรรมนี้ ---------- */
+let hands = null;
 let camWanted = true;
+let camPhase = "idle";              // idle → loading → live | denied | failed | off
+const skel = $("camSkeleton");
+const skelCtx = skel.getContext("2d");
 
-function buildCamZones(n) {
-  const zones = $("camZones");
-  zones.replaceChildren(...Array.from({ length: n }, (_, i) => {
-    const z = document.createElement("div");
-    z.className = "cam__zone";
-    z.innerHTML = `<span class="cam__fill"></span><span class="cam__num"></span>`;
-    z.querySelector(".cam__num").textContent = String(i + 1);
-    return z;
-  }));
-}
-
-const CAM_MESSAGES = {
-  busy: () => "มีการเคลื่อนไหวมาก รอให้ภาพนิ่งสักครู่",
-  learning: () => "กำลังจำพื้นหลัง ยืนนิ่ง ๆ สักครู่",
-  relearn: () => "กำลังจำพื้นหลังใหม่ ยืนนิ่ง ๆ สักครู่",
-  aiming: d => `เห็นมือที่ช่อง ${d.zone} แล้ว ค้างไว้อีก ${d.remain.toFixed(1)} วินาที`,
-  idle: () => "ยกมือขึ้นเหนือหมายเลขที่เลือก ค้างไว้ 1.4 วินาที",
-  ready: () => "กล้องพร้อมแล้ว",
-  denied: () => "ไม่ได้รับอนุญาตให้ใช้กล้อง — แตะเลือกคำตอบได้ตามปกติ",
-  off: () => "ปิดกล้องอยู่ — แตะเลือกคำตอบได้ตามปกติ"
+const VEIL = {
+  loading: ["กำลังเตรียมกล้อง", "แตะเลือกคำตอบด้านล่างได้เลยระหว่างรอ"],
+  denied:  ["ยังไม่ได้อนุญาตให้ใช้กล้อง", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"],
+  failed:  ["เครื่องนี้ใช้กล้องนับนิ้วไม่ได้", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"],
+  off:     ["ปิดกล้องอยู่", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"]
 };
 
-function ensureVision() {
-  if (vision) return vision;
-  vision = new HandVision($("camVideo"), $("motion"), {
-    onProgress(fractions, aimed) {
-      const zones = $("camZones").children;
-      const choices = $("choices").children;
-      for (let i = 0; i < zones.length; i++) {
-        const pct = Math.min(100, Math.round((fractions[i] || 0) * 100));
-        zones[i].querySelector(".cam__fill").style.height = pct + "%";
-        zones[i].classList.toggle("is-aimed", i === aimed);
-        choices[i]?.classList.toggle("is-aimed", i === aimed && pct > 25);
-      }
-    },
-    onStatus(kind, detail) {
-      const msg = CAM_MESSAGES[kind];
-      if (msg) $("camHint").textContent = msg(detail || {});
-      if (kind === "denied" || kind === "off") {
-        $("camOff").classList.remove("u-hidden");
-      } else if (kind === "ready") {
-        $("camOff").classList.add("u-hidden");
-      }
-    },
-    onPick(index) { pick(index); }
-  });
-  return vision;
+function setVeil(phase, progress = null) {
+  camPhase = phase;
+  const veil = $("camVeil");
+  if (phase === "live") { veil.classList.add("is-gone"); return; }
+  veil.classList.remove("is-gone");
+  const [title, note] = VEIL[phase] || VEIL.loading;
+  $("camVeilTitle").textContent = title;
+  $("camVeilNote").textContent = note;
+  $("camBar").style.width = progress === null ? "0%" : Math.round(progress * 100) + "%";
+  $("camBar").parentElement.classList.toggle("u-hidden", phase !== "loading");
+  $("btnCamRetry").classList.toggle("u-hidden", phase !== "denied" && phase !== "failed");
 }
 
-/* ขอสิทธิ์กล้องทันทีที่สลับเป็นโหมดบูธ เจ้าหน้าที่จะได้กดอนุญาตครั้งเดียวตอนตั้งเครื่อง
-   ไม่ใช่ให้กล่องอนุญาตไปโผล่ใส่นักเรียนคนแรกที่กดเริ่ม
-   แต่ลูปวิเคราะห์ภาพจะเดินเฉพาะตอนอยู่หน้าคำถาม ฉากอื่นหยุดหมด
-   เครื่องบูธที่เปิดทั้งวันจึงไม่ต้องประมวลผลภาพทิ้งเปล่า */
-function syncCamera() {
-  const kiosk = root.dataset.mode === "kiosk";
-  const onSurvey = state.screen === "screen-survey";
-  $("cam").classList.toggle("u-hidden", !kiosk);
+/* วาดโครงมือทับภาพ ให้ผู้เล่นเห็นว่าระบบมองเห็นมืออยู่จริง
+   ปลายนิ้วที่นับว่าเหยียดเป็นสีสัญญาณ นิ้วที่งอเป็นจุดจาง
+   ถ้าไม่วาดส่วนนี้ เวลานับผิดผู้เล่นจะไม่รู้เลยว่าปัญหาอยู่ที่นิ้วไหน */
+function drawSkeleton(frame) {
+  const w = skel.width, h = skel.height;
+  if (!w || !h) return;
+  skelCtx.clearRect(0, 0, w, h);
+  if (!frame?.hands?.length) return;
 
-  if (!kiosk || !camWanted) { vision?.stop(); return; }
+  const css = getComputedStyle(root);
+  const brass = css.getPropertyValue("--brass").trim() || "#C9A227";
+  const vermeil = css.getPropertyValue("--vermeil").trim() || "#F0708A";
 
-  const v = ensureVision();
-  /* ตั้งจำนวนช่องเฉพาะตอนอยู่หน้าคำถามเท่านั้น
-     ตอบครบแล้ว state.qi จะเท่ากับจำนวนข้อพอดี QUESTIONS[qi] จึงเป็น undefined
-     ถ้าอ่านตรงนี้โดยไม่ตรวจ แอปจะพังทันทีที่ทำแบบสำรวจจบในโหมดบูธ */
-  if (onSurvey) v.setZones(QUESTIONS[state.qi].options.length);
-  if (!v.ready) {
-    v.open().then(ok => { if (ok && state.screen === "screen-survey") v.start(); });
-    return;
+  for (const hand of frame.hands) {
+    const lm = hand.landmarks;
+    skelCtx.strokeStyle = brass;
+    skelCtx.lineWidth = Math.max(2, w / 220);
+    skelCtx.lineCap = "round";
+    for (const [a, b] of HAND_BONES) {
+      skelCtx.beginPath();
+      skelCtx.moveTo(lm[a].x * w, lm[a].y * h);
+      skelCtx.lineTo(lm[b].x * w, lm[b].y * h);
+      skelCtx.stroke();
+    }
+    [4, 8, 12, 16, 20].forEach((tip, i) => {
+      const up = hand.fingers[i];
+      skelCtx.fillStyle = up ? vermeil : "rgba(240,233,218,.45)";
+      skelCtx.beginPath();
+      skelCtx.arc(lm[tip].x * w, lm[tip].y * h, up ? w / 62 : w / 110, 0, Math.PI * 2);
+      skelCtx.fill();
+    });
   }
-  if (onSurvey) v.start(); else v.stop();
 }
 
+function sizeSkeleton() {
+  const rect = $("camVideo").getBoundingClientRect();
+  if (!rect.width) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  skel.width = Math.round(rect.width * dpr);
+  skel.height = Math.round(rect.height * dpr);
+}
+
+function paintTally({ count, progress, seen, locked }) {
+  const tally = $("tally");
+  const armed = seen && count >= 1 && !locked;
+  $("tallyNum").textContent = armed ? String(count) : "—";
+  tally.classList.toggle("is-armed", armed && progress > 0);
+  tally.classList.toggle("is-idle", !armed);
+  $("tallyFill").style.strokeDashoffset = String(283 - 283 * (armed ? progress : 0));
+
+  /* ตัวเลือกที่ตรงกับจำนวนนิ้วสว่างขึ้นทันที ผู้เล่นจึงรู้ว่าเลือกถูกก่อนค้างจนครบ */
+  const kids = $("choices").children;
+  for (let i = 0; i < kids.length; i++) {
+    kids[i].classList.toggle("is-aimed", armed && i === count - 1);
+  }
+}
+
+function ensureHands() {
+  if (hands) return hands;
+  hands = new HandCounter({
+    onFrame: drawSkeleton,
+    onProgress: paintTally,
+    onPick(count) { pick(count - 1); },     // ชู n นิ้ว = ตัวเลือกที่ n
+    onStatus(kind) {
+      if (kind === "denied") setVeil("denied");
+      if (kind === "failed") setVeil("failed");
+    }
+  });
+  return hands;
+}
+
+/* เปิดกล้องและโหลดโมเดลไปพร้อมกัน แล้วเริ่มตรวจเมื่อทั้งสองอย่างพร้อม
+   ระหว่างนี้ตัวเลือกที่แตะได้ยังใช้งานได้ตลอด ไม่มีใครถูกบังคับให้รอโมเดลแปดเมกะไบต์ */
+let camBooting = null;
+function bootCamera() {
+  if (camBooting) return camBooting;
+  const h = ensureHands();
+  setVeil("loading", 0);
+  camBooting = (async () => {
+    if (!await h.openCamera($("camVideo"))) { setVeil("denied"); return false; }
+    if (!await prefetchModel(p => { if (camPhase === "loading") setVeil("loading", p); })) {
+      setVeil("failed");
+      return false;
+    }
+    try { await h.load(); } catch { setVeil("failed"); return false; }
+    sizeSkeleton();
+    setVeil("live");
+    return true;
+  })().finally(() => { camBooting = null; });
+  return camBooting;
+}
+
+function syncCamera() {
+  const onSurvey = state.screen === "screen-survey";
+  $("cam").classList.toggle("u-hidden", !camWanted);
+
+  if (!camWanted || !onSurvey) { hands?.stop(); return; }
+
+  sizeSkeleton();
+  const arm = () => {
+    hands.setRange(QUESTIONS[state.qi].options.length);
+    hands.start();
+  };
+  if (hands?.ready) { arm(); setVeil("live"); return; }
+  bootCamera().then(ok => { if (ok && state.screen === "screen-survey") arm(); });
+}
 /* ---------- โหมดและธีม ---------- */
 const PREFS = "phangduang.prefs.v1";
 const prefs = (() => {
@@ -441,11 +497,10 @@ $("btnPathsBack").addEventListener("click", () => show(state.answers.length ? "s
 $("btnCamToggle").addEventListener("click", () => {
   camWanted = !camWanted;
   $("btnCamToggle").textContent = camWanted ? "ปิดกล้อง" : "เปิดกล้อง";
-  if (!camWanted) vision?.close();
+  if (!camWanted) hands?.closeCamera();
   syncCamera();
 });
-$("camSens").addEventListener("input", e => vision?.setSensitivity(+e.target.value));
-$("btnRecal").addEventListener("click", () => vision?.reset());
+$("btnCamRetry").addEventListener("click", () => { camBooting = null; syncCamera(); });
 
 /* แตะที่ฉากประมวลผลเพื่อข้ามไปดูผลเลย — คิวที่บูธจะได้เดินเร็วขึ้น */
 $("screen-cast").addEventListener("click", finishCast);
@@ -539,8 +594,8 @@ if ("serviceWorker" in navigator) {
   addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => { }));
 }
 
-/* กรอบภาพที่กล้องเห็นเปลี่ยนไป ต้องจำพื้นหลังใหม่ */
-addEventListener("resize", () => vision?.reset());
+/* กรอบภาพเปลี่ยนขนาด ต้องปรับความละเอียดของชั้นวาดโครงมือให้ตรงกัน */
+addEventListener("resize", sizeSkeleton);
 
 /* เตรียมโครงหน้าคำถามไว้ล่วงหน้า ตอนกดเริ่มจะได้ขึ้นทันทีโดยไม่กระพริบ
    ฉากเปิดถูกทำเป็น is-active ไว้ใน HTML แล้ว จึงไม่ต้องเรียก show() ซ้ำ */

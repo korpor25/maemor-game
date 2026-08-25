@@ -84,11 +84,18 @@ const walk = (d, b = "") => readdirSync(join(ROOT, d)).flatMap(n => {
   const rel = b ? posix.join(b, n) : n;
   return statSync(join(ROOT, d, n)).isDirectory() ? walk(join(d, n), rel) : [rel];
 });
+/* ไฟล์โมเดลนับนิ้วตั้งใจไม่ precache เพราะใหญ่เกินกว่าจะดึงตอนติดตั้ง
+   ตัวจัดการ fetch จะเก็บให้เองตอนใช้งานครั้งแรก */
+const isLazy = f => f.startsWith("assets/mp/");
 const onDisk = walk(".").filter(f => f !== "sw.js");
-for (const f of onDisk) {
+const core = onDisk.filter(f => !isLazy(f));
+for (const f of core) {
   if (!cached.has(f)) fail("ไม่ได้แคช", `${f} ไม่อยู่ในรายการ precache ของ sw.js`);
 }
-console.log(`ไฟล์ที่ sw.js แคชไว้: ครบ ${onDisk.length} ไฟล์บนดิสก์`);
+for (const f of onDisk.filter(isLazy)) {
+  if (cached.has(f)) fail("แคชหนักเกิน", `${f} ไม่ควรอยู่ในรายการ precache`);
+}
+console.log(`sw.js: precache ครบ ${core.length} ไฟล์ · ปล่อยให้แคชตอนใช้จริง ${onDisk.length - core.length} ไฟล์`);
 
 console.log(problems ? `\nพบปัญหา ${problems} จุด` : "\nผ่านทั้งหมด ไม่พบการอ้างอิงที่ขาดหาย");
 process.exit(problems ? 1 : 0);

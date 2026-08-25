@@ -51,14 +51,15 @@
         <h1 class="display intro__title" id="introTitle">ผังดวง<em>อาชีพ</em></h1>
         <p class="lede" style="margin-inline:auto">
           แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล ตอบ 6 ข้อ
-          แล้วอ่านผลเป็นผังดวงหกแกนที่บอกว่าคุณเอนไปทางสายงานใด
+          ด้วยการ<strong>ชูนิ้วหน้ากล้อง</strong> แล้วอ่านผลเป็นผังดวงหกแกน
+          ที่บอกว่าคุณเอนไปทางสายงานใด
         </p>
         <div>
           <ul class="facts">
+            <li>ชูนิ้วเลือกคำตอบ</li>
             <li>ใช้เวลา 3 นาที</li>
             <li>ไม่มีคำตอบถูกผิด</li>
             <li>ไม่เก็บข้อมูลส่วนตัว</li>
-            <li>เล่นได้แม้ไม่มีสัญญาณ</li>
           </ul>
           <div class="actions" style="margin-inline:auto">
             <button class="btn" id="btnStart">เริ่มทำแบบสำรวจ</button>
@@ -81,33 +82,43 @@
 
       <h2 class="survey__stem" id="stem"></h2>
 
-      <div class="choices" id="choices" role="group" aria-labelledby="stem"></div>
-
-      <!-- กล่องกล้อง: แสดงเฉพาะโหมดบูธ -->
-      <div class="cam u-hidden" id="cam">
-        <div class="cam__head">
-          <span id="camTitle">ยกมือหน้ากล้องเหนือหมายเลขที่เลือก</span>
-          <button class="btn btn--chip" id="btnCamToggle">ปิดกล้อง</button>
-        </div>
+      <!-- เวทีกล้อง: วิธีเลือกคำตอบหลักของกิจกรรมนี้ -->
+      <div class="cam" id="cam">
         <div class="cam__stage">
           <video class="cam__video" id="camVideo" autoplay muted playsinline aria-hidden="true"></video>
-          <div class="cam__zones" id="camZones" aria-hidden="true"></div>
-          <div class="cam__off u-hidden" id="camOff">กล้องยังไม่พร้อม — แตะเลือกคำตอบด้านบนได้ตามปกติ</div>
+          <canvas class="cam__skeleton" id="camSkeleton" aria-hidden="true"></canvas>
+
+          <!-- ตัวเลขที่ตรวจได้ พร้อมวงแหวนนับเวลาค้าง -->
+          <div class="tally" id="tally" aria-hidden="true">
+            <svg class="tally__ring" viewBox="0 0 100 100">
+              <circle class="tally__track" cx="50" cy="50" r="45"/>
+              <circle class="tally__fill" cx="50" cy="50" r="45" id="tallyFill"/>
+            </svg>
+            <span class="tally__num" id="tallyNum">—</span>
+          </div>
+
+          <div class="cam__veil" id="camVeil">
+            <div class="cam__veil-inner">
+              <p class="cam__veil-title" id="camVeilTitle">กำลังเตรียมกล้อง</p>
+              <div class="cam__bar"><i id="camBar"></i></div>
+              <p class="cam__veil-note" id="camVeilNote">แตะเลือกคำตอบด้านล่างได้เลยระหว่างรอ</p>
+              <button class="btn btn--chip u-hidden" id="btnCamRetry">ลองเปิดกล้องอีกครั้ง</button>
+            </div>
+          </div>
         </div>
-        <p class="cam__hint" id="camHint" aria-live="polite"></p>
-        <div class="cam__ctl">
-          <label for="camSens">ความไวกล้อง</label>
-          <input id="camSens" type="range" min="1" max="5" step="1" value="4">
-          <button class="btn btn--chip" id="btnRecal">จำพื้นหลังใหม่</button>
-        </div>
-        <p class="fine" style="text-align:center">
-          ภาพจากกล้องใช้ตรวจจับการเคลื่อนไหวภายในเครื่องเท่านั้น ไม่ถูกบันทึกและไม่ถูกส่งออก
-        </p>
+
+        <p class="cam__hint" id="camHint" aria-live="polite">ชูนิ้วให้ตรงกับหมายเลขคำตอบ แล้วค้างไว้</p>
       </div>
 
-      <div class="actions">
-        <button class="btn btn--quiet u-hidden" id="btnBack">ย้อนกลับหนึ่งข้อ</button>
+      <div class="choices" id="choices" role="group" aria-labelledby="stem"></div>
+
+      <div class="actions actions--survey">
+        <button class="btn btn--quiet btn--chip u-hidden" id="btnBack">ย้อนกลับหนึ่งข้อ</button>
+        <button class="btn btn--chip" id="btnCamToggle">ปิดกล้อง</button>
       </div>
+      <p class="fine cam__privacy">
+        ภาพจากกล้องถูกประมวลผลในเครื่องนี้เท่านั้น ไม่ถูกบันทึกและไม่ถูกส่งออกไปที่ใด
+      </p>
     </section>
 
     <!-- ฉากประมวลผล -->

@@ -480,56 +480,83 @@ button { font: inherit; color: inherit; background: none; border: 0; }
 .path-row__jobs { font-size: var(--t--1); color: var(--bone-dim); margin-top: var(--s1); }
 .path-row__study { font-size: var(--t--1); color: var(--bone-dim); margin-top: var(--s2); opacity: .8; }
 
-/* ---------- 14. กล่องกล้อง (โหมดบูธ) ---------- */
-.cam {
-  width: 100%; max-width: var(--measure);
-  border: 1px solid var(--line-2); border-radius: var(--r-lg);
-  padding: var(--s4);
-  display: grid; gap: var(--s3);
-}
-.cam__head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--s3);
-  font-size: var(--t--1); font-weight: 600; color: var(--brass);
-}
+/* ---------- 14. เวทีกล้อง ----------
+   นี่คือวิธีเลือกคำตอบหลัก จึงได้พื้นที่มากที่สุดบนหน้าจอ
+   ตัวเลือกที่แตะได้อยู่ด้านล่างในฐานะทางสำรอง ไม่ใช่ทางหลัก */
+.cam { width: 100%; max-width: var(--measure); display: grid; gap: var(--s3); }
+
 .cam__stage {
-  position: relative; aspect-ratio: 16 / 9;
-  border-radius: var(--r-md); overflow: hidden;
-  background: #05060F; border: 1px solid var(--line-2);
+  position: relative; aspect-ratio: 4 / 3;
+  border-radius: var(--r-lg); overflow: hidden;
+  background: #05060F; border: 1px solid var(--line);
 }
-.cam__video {
+.cam__video,
+.cam__skeleton {
   position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  transform: scaleX(-1); opacity: .85;
+  width: 100%; height: 100%;
+  /* กลับซ้ายขวาให้เหมือนส่องกระจก ยกมือขวาแล้วเห็นขยับทางขวา */
+  transform: scaleX(-1);
 }
-.cam__zones { position: absolute; inset: 0; display: flex; }
-.cam__zone {
-  flex: 1; position: relative;
+.cam__video { object-fit: cover; }
+.cam__skeleton { object-fit: fill; pointer-events: none; }
+
+/* ตัวเลขที่ตรวจได้ ใหญ่พอให้เห็นจากระยะยืน และวงแหวนบอกว่าต้องค้างอีกนานแค่ไหน */
+.tally {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(96px, 30%, 150px); aspect-ratio: 1;
   display: grid; place-items: center;
-  border-right: 1px solid rgba(240,233,218,.24);
+  pointer-events: none;
+  transition: opacity .2s var(--ease), transform .2s var(--ease-out);
 }
-.cam__zone:last-child { border-right: 0; }
-.cam__fill {
-  position: absolute; inset: auto 0 0 0; height: 0;
-  background: rgba(201,162,39,.5);
-  transition: height .1s linear;
+.tally.is-idle { opacity: .32; transform: translate(-50%, -50%) scale(.86); }
+.tally.is-armed { opacity: 1; }
+.tally__ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+.tally__track, .tally__fill {
+  fill: rgba(11,16,38,.55); stroke-width: 5;
+  stroke: rgba(240,233,218,.28);
 }
-.cam__zone.is-aimed { box-shadow: inset 0 0 0 2px var(--brass); }
-.cam__num {
+.tally__fill {
+  fill: none; stroke: var(--brass);
+  stroke-linecap: round;
+  stroke-dasharray: 283;               /* 2πr ที่ r = 45 */
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset .1s linear;
+}
+.tally__num {
   position: relative;
-  font-family: var(--mono); font-size: clamp(18px, 5vw, 26px); font-weight: 500;
-  color: #fff; text-shadow: 0 1px 6px #000;
+  font-family: var(--mono); font-weight: 500;
+  font-size: clamp(38px, 12vw, 62px); line-height: 1;
+  color: var(--bone); text-shadow: 0 2px 12px rgba(0,0,0,.8);
 }
-.cam__off {
+.tally.is-armed .tally__num { color: var(--brass); }
+
+/* ม่านคลุมตอนกำลังโหลดโมเดล หรือตอนกล้องใช้ไม่ได้ */
+.cam__veil {
   position: absolute; inset: 0;
   display: grid; place-items: center; padding: var(--s4);
-  text-align: center; font-size: var(--t--1);
-  background: rgba(11,16,38,.9); color: var(--bone-dim);
+  background: rgba(11,16,38,.92);
+  transition: opacity .3s var(--ease);
 }
-.cam__hint { font-size: var(--t--1); color: var(--bone-dim); min-height: 2.6em; text-align: center; }
-.cam__ctl { display: flex; align-items: center; justify-content: center; gap: var(--s3); flex-wrap: wrap; }
-.cam__ctl label { font-size: var(--t--1); color: var(--bone-dim); }
-.cam__ctl input[type="range"] { width: 140px; height: 36px; accent-color: var(--brass); }
+.cam__veil.is-gone { opacity: 0; pointer-events: none; }
+.cam__veil-inner { display: grid; gap: var(--s3); justify-items: center; text-align: center; max-width: 26rem; }
+.cam__veil-title { font-family: var(--display); font-weight: 600; font-size: var(--t-1); }
+.cam__veil-note { font-size: var(--t--1); color: var(--bone-dim); }
+.cam__bar {
+  width: min(220px, 60vw); height: 5px; border-radius: 999px;
+  background: var(--ink-3); overflow: hidden;
+}
+.cam__bar i {
+  display: block; height: 100%; width: 0;
+  background: var(--brass); border-radius: 999px;
+  transition: width .25s var(--ease);
+}
+
+.cam__hint { font-size: var(--t--1); color: var(--bone-dim); text-align: center; min-height: 2.4em; }
+.cam__privacy { text-align: center; max-width: var(--measure); }
+
+.actions--survey { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.actions--survey .btn { width: auto; }
 
 /* ---------- 15. แผงสถิติบูธ ---------- */
 .panel {
