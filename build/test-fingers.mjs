@@ -3,7 +3,7 @@
    สิ่งที่เทสต์นี้ยืนยัน: เกณฑ์มุมและเกณฑ์การกางนิ้วโป้งตัดสินถูกต้อง
    สิ่งที่เทสต์นี้ยืนยันไม่ได้: โมเดลหาจุดข้อต่อได้แม่นแค่ไหนกับมือจริงในแสงจริง */
 import { readFingers, countFingers } from "../src/lib/hands.js";
-import { makeHand } from "./hand-poses.mjs";
+import { makeHand } from "../src/lib/handPoses.js";
 
 const NAMES = ["โป้ง", "ชี้", "กลาง", "นาง", "ก้อย"];
 

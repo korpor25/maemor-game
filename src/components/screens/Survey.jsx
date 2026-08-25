@@ -1,12 +1,15 @@
 "use client";
 
 /* หน้าคำถาม — ต้องอยู่ในจอเดียวเสมอ ไม่มีการเลื่อน
-   ผู้เล่นต้องอ่านโจทย์ อ่านตัวเลือก และเห็นภาพกล้องได้พร้อมกัน
+   ผู้เล่นอ่านโจทย์ อ่านตัวเลือก และเห็นภาพกล้องได้พร้อมกัน
    แล้วตอบด้วยการขยับมืออย่างเดียว
 
-   วิธีที่ทำให้พอดีจอทุกกรณี: ตัวเลือกแบ่งความสูงที่เหลือเท่า ๆ กัน
-   ข้อที่มีสี่ตัวเลือกจึงได้แถวสูง ข้อที่มีหกได้แถวเตี้ยลง แต่ไม่มีข้อไหนล้นจอ
-   ถ้าตั้งความสูงตายตัวให้แต่ละแถว ข้อสุดท้ายที่มีหกตัวเลือกจะล้นทันที */
+   เนื้อหาวางบนผิวทึบ ไม่ลอยบนพื้นหลังโดยตรง
+   เพราะพื้นหลังมีลำแสงเคลื่อนผ่านตลอด ถ้าไม่มีผิวรอง ความคมชัดของตัวอักษร
+   จะเปลี่ยนไปมาตามจังหวะแสงจนอ่านยาก
+
+   ลำดับบล็อกในโค้ดเป็นลำดับของจอแนวตั้ง ส่วนจอแนวนอนสลับตำแหน่งด้วย
+   grid-template-areas ไม่ต้องมีมาร์กอัปสองชุด */
 
 import { QUESTIONS } from "@/lib/data";
 import CameraStage from "@/components/CameraStage";
@@ -16,44 +19,52 @@ export default function Survey({
 }) {
   const q = QUESTIONS[qi];
   if (!q) return null;
+  const progress = ((qi + 1) / QUESTIONS.length) * 100;
 
   return (
-    <section className="screen screen--fit survey">
-      <div className="survey__bar">
-        <p className="tag tag--blue">{q.domain}</p>
-        <div className="ticks" aria-hidden="true">
-          {QUESTIONS.map((_, i) => (
-            <b key={i} className={i < qi ? "is-done" : i === qi ? "is-here" : ""} />
-          ))}
+    <section className="screen screen--fit survey surface">
+      <header className="survey__head">
+        <div className="survey__meta">
+          <span className="code">คำถาม {qi + 1} / {QUESTIONS.length}</span>
+          <span className="tag tag--blue">{q.domain}</span>
         </div>
-        <p className="code">{qi + 1} / {QUESTIONS.length}</p>
-        {qi > 0 && <button className="btn-link" onClick={onBack}>ย้อนกลับ</button>}
-        <button className="sw" onClick={onToggleCam}>cam[<b>{camOn ? "on" : "off"}</b>]</button>
-      </div>
+        <div className="progress" role="progressbar"
+             aria-valuenow={qi + 1} aria-valuemin={1} aria-valuemax={QUESTIONS.length}>
+          <i style={{ width: `${progress}%` }} />
+        </div>
+      </header>
 
       <h2 className="survey__stem">{q.stem}</h2>
 
-      <div className="choices" role="group" aria-label={q.stem}>
-        {q.options.map((opt, i) => (
-          <button
-            key={i}
-            type="button"
-            className={`choice${aim === i + 1 ? " is-aimed" : ""}`}
-            onClick={() => onPick(i)}
-          >
-            <span className="choice__key" aria-hidden="true">{i + 1}</span>
-            <span className="choice__text">{opt.text}</span>
-          </button>
-        ))}
+      <div className="survey__cam">
+        <CameraStage
+          active
+          enabled={camOn}
+          optionCount={q.options.length}
+          onPick={onPick}
+          onAimChange={onAim}
+        />
       </div>
 
-      <CameraStage
-        active
-        enabled={camOn}
-        optionCount={q.options.length}
-        onPick={onPick}
-        onAimChange={onAim}
-      />
+      <div className="survey__answers">
+        <div className="choices" data-count={q.options.length} role="group" aria-label={q.stem}>
+          {q.options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`choice${aim === i + 1 ? " is-aimed" : ""}`}
+              onClick={() => onPick(i)}
+            >
+              <span className="choice__key" aria-hidden="true">{i + 1}</span>
+              <span className="choice__text">{opt.text}</span>
+            </button>
+          ))}
+        </div>
+        <div className="survey__tools">
+          <button className="sw" onClick={onToggleCam}>cam[<b>{camOn ? "on" : "off"}</b>]</button>
+          {qi > 0 && <button className="btn-link" onClick={onBack}>ย้อนกลับ</button>}
+        </div>
+      </div>
     </section>
   );
 }

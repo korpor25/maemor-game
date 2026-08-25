@@ -9,8 +9,8 @@
 }
 .grid-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 .grid-layer svg { width: 100%; height: 100%; display: block; }
-.grid-line { stroke: var(--line-soft); stroke-width: 1; }
-.grid-tick line { stroke: var(--line); stroke-width: 1; }
+.grid-line { stroke: var(--line-soft); stroke-width: 1; opacity: .6; }
+.grid-tick line { stroke: var(--line); stroke-width: 1; opacity: .55; }
 
 /* พื้นแสงหักเห — CSS ล้วน ไม่มีไฟล์ภาพให้โหลดเพิ่มแม้แต่ไบต์เดียว */
 body::before {
@@ -26,7 +26,8 @@ body::after {
     transparent 20% 33%, rgba(255,255,255,.28) 35% 37%,
     transparent 39% 55%, rgba(255,255,255,.34) 57% 61%,
     transparent 63% 77%, rgba(255,255,255,.2) 79% 82%, transparent 84%);
-  filter: blur(16px);
+  filter: blur(22px);
+  opacity: .55;
   animation: drift 40s ease-in-out infinite alternate;
 }
 [data-theme="night"] body::after, [data-theme="night"]::after { opacity: .1; }
@@ -156,108 +157,107 @@ body::after {
 }
 
 /* ---------- หน้าคำถาม ----------
-   ทุกอย่างต้องอยู่ในจอเดียว ผู้เล่นจะได้ตอบด้วยมืออย่างเดียวโดยไม่ต้องเลื่อน */
+   ทุกอย่างอยู่ในจอเดียว ผู้เล่นจะได้ตอบด้วยมืออย่างเดียวโดยไม่ต้องเลื่อน
+   จอแนวตั้งเรียงลงเป็นแถวกลาง จอแนวนอนแยกกล้องไปคอลัมน์ซ้าย */
 .screen--fit {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  padding-block: var(--s4);
+  height: 100%; min-height: 0; overflow: hidden;
+  padding: var(--s4); margin-block: var(--s3);
 }
 
-/* จองที่ให้กล้องด้วยกริด ไม่ปล่อยให้ลอยทับ
-   เคยทำเป็นหน้าต่างลอยมุมขวาล่างแล้วมันบังตัวเลือกสองข้อสุดท้าย
-   ซึ่งขัดกับทั้งหมดที่พยายามทำอยู่ */
 .survey {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(92px, 26vw, 132px);
-  grid-template-rows: auto auto minmax(0, 1fr);
-  grid-template-areas:
-    "bar     cam"
-    "stem    cam"
-    "choices choices";
-  column-gap: var(--s4);
-  row-gap: var(--s3);
-  align-content: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  /* กล้องได้พื้นที่ที่เหลือทั้งหมด แต่ยุบได้ถึง 84px เมื่อข้อนั้นมีตัวเลือกเยอะ
+     ตัวเลือกจึงไม่เคยถูกบีบจนอ่านไม่ออก ไม่ว่าจะสี่ข้อหรือหกข้อ */
+  grid-template-rows: auto auto minmax(84px, 1fr) auto;
+  grid-template-areas: "head" "stem" "cam" "answers";
+  gap: var(--s4);
+  text-align: center;
+  justify-items: center;
 }
 
-.survey__bar {
-  grid-area: bar;
-  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
-  padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft);
+.survey__head { grid-area: head; width: 100%; display: grid; gap: var(--s2); }
+.survey__meta {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
 }
-.ticks { display: flex; gap: 4px; flex: 1; min-width: 80px; }
-.ticks b { flex: 1; height: 3px; background: var(--line); transition: background .4s var(--ease); }
-.ticks b.is-done { background: var(--ink); }
-.ticks b.is-here { background: var(--blue); }
+.progress { height: 8px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+.progress i {
+  display: block; height: 100%; border-radius: 99px;
+  background: var(--blue); transition: width .5s var(--out);
+}
 
 .survey__stem {
   grid-area: stem;
-  /* ผูกขนาดกับความสูงจอด้วย เพราะจอเตี้ยต้องเสียสละพาดหัวให้ตัวเลือกก่อน */
-  font-size: clamp(1.125rem, 2.6vh + .35rem, 1.625rem);
-  font-weight: 700; line-height: 1.4; letter-spacing: -.01em;
-  max-width: 44ch;
+  font-size: clamp(1.125rem, 2.4vh + .35rem, 1.5rem);
+  font-weight: 700; line-height: 1.45; letter-spacing: -.008em;
+  max-width: 30ch;
 }
 
-/* ตัวเลือกแบ่งความสูงที่เหลือเท่า ๆ กัน จำนวนข้อจึงไม่ทำให้ล้นจอ */
-.choices {
-  grid-area: choices;
-  display: grid; grid-auto-rows: minmax(0, 1fr);
-  min-height: 0; width: 100%;
-}
+.survey__cam { grid-area: cam; min-height: 0; width: 100%; display: grid; justify-items: center; }
+.survey__answers { grid-area: answers; width: 100%; display: grid; gap: var(--s3); }
+
+/* ตัวเลือกเป็นปุ่มมีขอบเรียงลง แตะง่ายและแยกจากกันชัด
+   ต่างจากแถวคั่นเส้นแบบเดิมที่กลืนไปกับพื้นหลัง */
+.choices { display: grid; gap: var(--s2); width: 100%; }
 .choice {
   position: relative; isolation: isolate;
   display: flex; align-items: center; gap: var(--s3);
-  width: 100%; min-height: 0; padding: var(--s2) var(--s3) var(--s2) 0;
-  text-align: left; border-bottom: 1px solid var(--line-soft);
+  width: 100%; min-height: clamp(46px, 6.2vh, 62px);
+  padding: var(--s2) var(--s4);
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 999px;
   cursor: pointer; touch-action: manipulation;
-  transition: padding-left .3s var(--out);
-}
-.choice::before {
-  content: ""; position: absolute; inset: 0 auto 0 0; width: 0; z-index: -1;
-  background: var(--surface); transition: width .34s var(--out);
+  transition: border-color .2s var(--ease), background .2s var(--ease),
+              transform .22s var(--out);
 }
 .choice__key {
-  flex: 0 0 auto;
-  width: clamp(26px, 3.4vh, 34px); height: clamp(26px, 3.4vh, 34px);
+  flex: 0 0 auto; width: 26px; height: 26px;
   display: grid; place-items: center;
-  font-family: var(--mono); font-size: var(--t-tag); font-weight: 500;
-  color: var(--ink-2); border: 1px solid var(--line); border-radius: 50%;
+  font-family: var(--mono); font-size: .8125rem; font-weight: 500;
+  color: var(--ink-2); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 50%;
   transition: background .2s var(--ease), color .2s var(--ease),
-              border-color .2s var(--ease), transform .26s var(--out);
+              border-color .2s var(--ease), transform .24s var(--out);
 }
 .choice__text {
   flex: 1; min-width: 0;
-  font-size: clamp(.9375rem, 1.5vh + .3rem, 1.125rem);
-  line-height: 1.45;
-  /* ตัดบรรทัดที่สามทิ้งแทนการดันแถวให้สูงจนล้นจอ
-     ข้อความของเราไม่มีข้อไหนยาวถึงขนาดนั้นอยู่แล้ว */
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+  font-size: clamp(.875rem, 1.3vh + .35rem, 1.0625rem);
+  font-weight: 500; line-height: 1.4;
+  display: -webkit-box; -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* จำนวนบรรทัดที่ยอมให้ปรับตามจำนวนตัวเลือกของข้อนั้น
+   ข้อที่มีสี่ตัวเลือกมีที่ว่างเหลือ จึงให้สามบรรทัดเพื่อไม่ตัดข้อความทิ้ง
+   ข้อที่มีห้าหกตัวเลือกต้องจำกัดที่สองบรรทัด ไม่งั้นล้นจอ
+   ซึ่งพอดีกับเนื้อหาจริง เพราะข้อที่มีตัวเลือกเยอะใช้ข้อความสั้นกว่าอยู่แล้ว */
+.choices[data-count="4"] .choice__text,
+.choices[data-count="3"] .choice__text { -webkit-line-clamp: 3; }
+.choices[data-count="5"] .choice__text,
+.choices[data-count="6"] .choice__text { -webkit-line-clamp: 2; }
 @media (hover: hover) {
-  .choice:hover { padding-left: var(--s3); }
-  .choice:hover::before { width: 100%; }
+  .choice:hover { border-color: var(--ink); transform: translateY(-1px); }
   .choice:hover .choice__key { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 }
-/* สถานะที่กล้องกำลังเล็งอยู่ ต้องเห็นชัดที่สุดในหน้านี้
+.choice:active { transform: scale(.99); }
+/* สถานะที่กล้องกำลังเล็ง ต้องเห็นชัดที่สุดในหน้านี้
    เพราะเป็นการยืนยันเดียวที่ผู้เล่นได้ก่อนคำตอบถูกบันทึก */
-.choice.is-aimed { padding-left: var(--s3); }
-.choice.is-aimed::before { width: 100%; background: var(--surface-2); }
+.choice.is-aimed {
+  border-color: var(--blue); background: var(--paper-2);
+  box-shadow: 0 0 0 2px var(--blue) inset;
+}
 .choice.is-aimed .choice__key {
-  background: var(--blue); color: #fff; border-color: var(--blue); transform: scale(1.12);
+  background: var(--blue); color: #fff; border-color: var(--blue); transform: scale(1.1);
 }
 
-/* ---------- เวทีกล้อง ----------
-   จอแนวตั้ง: หน้าต่างลอยมุมขวาล่าง ปล่อยความสูงทั้งหมดให้โจทย์กับตัวเลือก
-   จอแนวนอน: คอลัมน์ซ้ายเต็มความสูง เพราะมีที่ว่างพอ */
-.cam {
-  grid-area: cam;
-  min-height: 0;
-  display: grid; grid-template-rows: minmax(0, 1fr); gap: var(--s2);
-}
+.survey__tools { display: flex; align-items: center; justify-content: center; gap: var(--s5); }
+
+/* ---------- เวทีกล้อง ---------- */
+.cam { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--s2); }
 .cam__stage {
   position: relative; min-height: 0;
-  border-radius: var(--r); overflow: hidden;
+  aspect-ratio: 4 / 3; margin-inline: auto; max-width: 100%;
+  border-radius: var(--r-lg); overflow: hidden;
   background: #04060B; border: 1px solid var(--line);
 }
 .cam__video, .cam__skeleton {
@@ -266,11 +266,11 @@ body::after {
 }
 .cam__video { object-fit: cover; }
 .cam__skeleton { object-fit: fill; pointer-events: none; }
-.cam__hint { display: none; }
+.cam__hint { color: var(--ink-3); }
 
 .tally {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 62%; aspect-ratio: 1;
+  width: 40%; aspect-ratio: 1;
   display: grid; place-items: center; pointer-events: none;
   transition: opacity .2s var(--ease), transform .24s var(--out);
 }
@@ -283,41 +283,39 @@ body::after {
 }
 .tally__num {
   position: relative; font-family: var(--mono); font-weight: 500;
-  font-size: clamp(26px, 8vw, 40px); line-height: 1;
+  font-size: clamp(24px, 5vh, 46px); line-height: 1;
   color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .9);
 }
 
 .cam__veil {
-  position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s2);
+  position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s3);
   background: rgba(4, 6, 11, .92);
 }
-.cam__veil-in { display: grid; gap: var(--s2); justify-items: center; text-align: center; }
-.cam__veil-in .tag { font-size: .8125rem; line-height: 1.35; }
-.cam__veil-in .fine { display: none; }        /* หน้าต่างเล็กเกินกว่าจะใส่คำอธิบายยาว */
-.cam__bar { width: 80%; height: 3px; background: rgba(255, 255, 255, .18); border-radius: 99px; }
+.cam__veil-in { display: grid; gap: var(--s2); justify-items: center; text-align: center; max-width: 22rem; }
+.cam__bar { width: min(180px, 70%); height: 3px; background: rgba(255, 255, 255, .2); border-radius: 99px; }
 .cam__bar i { display: block; height: 100%; background: #fff; border-radius: 99px; transition: width .25s var(--ease); }
-.cam__veil .btn { background: #fff; color: #04060B; border-color: #fff; min-height: 34px; padding: 0 var(--s3); font-size: .75rem; }
+.cam__veil .btn { background: #fff; color: #04060B; border-color: #fff; min-height: 40px; padding: 0 var(--s4); font-size: var(--t-tag); }
 
-/* จอแนวนอนที่กว้างพอ — กล้องกลับมาเป็นคอลัมน์ซ้ายเต็มความสูง */
+/* ---------- จอแนวนอนที่กว้างพอ ----------
+   กล้องย้ายไปคอลัมน์ซ้ายเต็มความสูง เนื้อหาชิดซ้ายเพราะอ่านเป็นย่อหน้าง่ายกว่า */
 @media (min-width: 52rem) and (min-height: 34rem) {
   .survey {
     grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas:
-      "cam bar"
+      "cam head"
       "cam stem"
-      "cam choices";
+      "cam answers";
     column-gap: var(--s7);
+    text-align: left;
+    justify-items: stretch;
   }
-  .cam { grid-template-rows: minmax(0, 1fr) auto; gap: var(--s3); }
-  .cam__stage { border-radius: var(--r-lg); }
-  .cam__hint {
-    display: block; text-align: center;
-    font-size: var(--t-tag); line-height: 1.5; color: var(--ink-3);
-  }
-  .cam__veil-in .fine { display: block; }
-  .cam__veil .btn { min-height: 42px; padding: 0 var(--s4); font-size: var(--t-tag); }
-  .tally { width: clamp(96px, 26%, 150px); }
-  .tally__num { font-size: clamp(34px, 5vw, 52px); }
+  .survey__cam { grid-area: cam; align-self: stretch; }
+  .cam__stage { aspect-ratio: auto; height: 100%; width: 100%; }
+  .survey__stem { max-width: 34ch; font-size: clamp(1.25rem, 2.6vh + .4rem, 1.75rem); }
+  .survey__answers { align-self: center; }
+  .survey__tools { justify-content: flex-start; }
+  .tally { width: clamp(88px, 22%, 140px); }
 }
 
 /* ---------- ฉากประมวลผล ---------- */

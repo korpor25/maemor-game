@@ -61,13 +61,15 @@
 :root {
   --paper:     #BDD8EF;
   --paper-2:   #E2F0FB;
-  --surface:   rgba(255, 255, 255, .58);
-  --surface-2: rgba(255, 255, 255, .84);
-  --ink:       #080A0C;
-  --ink-2:     #3B434D;
-  --ink-3:     #626C78;
-  --line:      rgba(8, 10, 12, .18);
-  --line-soft: rgba(8, 10, 12, .09);
+  /* ผิวต้องทึบพอที่ตัวอักษรจะไม่จมไปกับลำแสงที่เคลื่อนอยู่ข้างหลัง
+     เคยตั้งไว้โปร่งกว่านี้ แล้วความคมชัดเปลี่ยนไปมาตามจังหวะแสง */
+  --surface:   rgba(255, 255, 255, .86);
+  --surface-2: rgba(255, 255, 255, .95);
+  --ink:       #05070A;
+  --ink-2:     #2B333C;
+  --ink-3:     #4C5560;
+  --line:      rgba(5, 7, 10, .2);
+  --line-soft: rgba(5, 7, 10, .11);
   --blue:      #1F63DE;
   --blue-2:    #7FB0FF;
 
@@ -103,13 +105,13 @@
 [data-theme="night"] {
   --paper:     #070A11;
   --paper-2:   #121A28;
-  --surface:   rgba(255, 255, 255, .06);
-  --surface-2: rgba(255, 255, 255, .1);
-  --ink:       #F2F6FB;
-  --ink-2:     #B4BECB;
-  --ink-3:     #8A94A2;
-  --line:      rgba(242, 246, 251, .2);
-  --line-soft: rgba(242, 246, 251, .1);
+  --surface:   rgba(16, 23, 36, .88);
+  --surface-2: rgba(22, 31, 47, .95);
+  --ink:       #F4F8FD;
+  --ink-2:     #C3CCD8;
+  --ink-3:     #9AA5B3;
+  --line:      rgba(244, 248, 253, .22);
+  --line-soft: rgba(244, 248, 253, .12);
   --blue:      #6EA2FF;
   --blue-2:    #2A5FC4;
 }
@@ -159,7 +161,17 @@ button { font: inherit; color: inherit; background: none; border: 0; }
 .md { font-size: var(--t-md); font-weight: 600; line-height: 1.45; }
 .lede { font-size: var(--t-lede); line-height: var(--lh-lead); color: var(--ink-2); max-width: var(--measure); }
 .body { font-size: var(--t-body); line-height: var(--lh-body); }
+.lede { font-weight: 450; }
 .fine { font-size: var(--t-tag); line-height: 1.6; color: var(--ink-3); }
+
+/* ผิวสำหรับบล็อกที่มีตัวหนังสือให้อ่าน — ขอบชัดและพื้นทึบ
+   หน้านี้มีพื้นหลังสี่ชั้นซ้อนกัน ถ้าไม่มีผิวรอง ตัวอักษรจะจมหายไปกับแสง */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(20px) saturate(1.1);
+}
 .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* ---------- ปุ่ม ---------- */

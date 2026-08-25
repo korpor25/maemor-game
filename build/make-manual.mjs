@@ -7,7 +7,7 @@
 import { PATHS, QUESTIONS, AXES, CEILING } from "../src/lib/data.js";
 import { pointAt, polygonOf, PLATE } from "../src/lib/plate.js";
 import { HAND_BONES, readFingers } from "../src/lib/hands.js";
-import { makeHand, POSES } from "./hand-poses.mjs";
+import { makeHand, POSES } from "../src/lib/handPoses.js";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
