@@ -10,10 +10,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { HandCounter, prefetchModel, HAND_BONES } from "@/lib/hands";
 
 const VEIL = {
-  loading: ["กำลังเตรียมกล้อง", "แตะเลือกคำตอบด้านล่างได้เลยระหว่างรอ"],
-  denied: ["ยังไม่ได้อนุญาตให้ใช้กล้อง", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"],
-  failed: ["เครื่องนี้ใช้กล้องนับนิ้วไม่ได้", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"],
-  off: ["ปิดกล้องอยู่", "แตะเลือกคำตอบด้านล่างได้ตามปกติ"]
+  loading: ["กำลังเตรียมกล้อง", "ระหว่างนี้แตะเลือกคำตอบได้เลย"],
+  denied: ["ยังไม่ได้อนุญาตให้ใช้กล้อง", "แตะเลือกคำตอบได้ตามปกติ"],
+  failed: ["เครื่องนี้ใช้กล้องนับนิ้วไม่ได้", "แตะเลือกคำตอบได้ตามปกติ"],
+  off: ["ปิดกล้องอยู่", "แตะเลือกคำตอบได้ตามปกติ"]
 };
 
 export default function CameraStage({ active, optionCount, onPick, enabled, onAimChange }) {
@@ -157,7 +157,7 @@ export default function CameraStage({ active, optionCount, onPick, enabled, onAi
       <p className="fine cam__hint">
         {phase === "live"
           ? "ชูนิ้วให้ตรงกับหมายเลขคำตอบ แล้วค้างไว้จนวงแหวนเต็ม"
-          : "ระหว่างนี้แตะเลือกคำตอบด้านล่างได้เลย"}
+          : "ระหว่างนี้แตะเลือกคำตอบได้เลย"}
       </p>
     </div>
   );

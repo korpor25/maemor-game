@@ -102,7 +102,7 @@ await shot("2-survey");
 /* รอให้เลขข้อเปลี่ยนจริงก่อนกดข้อถัดไป เชื่อถือได้กว่าเทียบข้อความโจทย์
    เพราะโจทย์อาจยาวจนถูกตัดต่างกันระหว่างเฟรม */
 for (let q = 0; q < 6; q++) {
-  const before = await text(".survey__meta .code");
+  const before = await text(".survey__bar .code");
   const info = await page.evaluate(() => {
     const el = document.querySelector(".choice");
     if (!el) return "ไม่พบตัวเลือก";
@@ -110,8 +110,10 @@ for (let q = 0; q < 6; q++) {
     return `มี ${document.querySelectorAll(".choice").length} ตัวเลือก`;
   });
   console.log(`  กด ${before} · ${info}`);
+  /* ข้อสุดท้ายมีหกตัวเลือก เป็นกรณีที่แน่นที่สุด ต้องเห็นว่ายังพอดีจอ */
+  if (q === 4) { await wait(500); await shot("2b-survey-6"); }
   if (q < 5) {
-    await until(async () => (await text(".survey__meta .code")) !== before, `ข้อ ${q + 2}`);
+    await until(async () => (await text(".survey__bar .code")) !== before, `ข้อ ${q + 2}`);
     /* pick() ในแอปมีตัวกันการกดซ้ำ 240 มิลลิวินาที เพื่อไม่ให้ท่ามือเดียวถูกนับสองครั้ง
        ถ้ากดข้อถัดไปเร็วกว่านั้น คลิกจะถูกทิ้งเงียบ ๆ แล้วสคริปต์จะค้างรอตลอดไป */
     await wait(350);

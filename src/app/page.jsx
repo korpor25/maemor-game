@@ -57,6 +57,10 @@ export default function Page() {
     return () => clearTimeout(t);
   }, []);
 
+  /* บอก CSS ว่ากำลังอยู่ฉากไหน หน้าคำถามต้องล็อกความสูงให้พอดีจอ
+     ส่วนฉากอื่นปล่อยให้เลื่อนได้ตามเนื้อหา */
+  useEffect(() => { document.documentElement.dataset.screen = screen; }, [screen]);
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.mode = mode;

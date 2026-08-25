@@ -54,6 +54,10 @@ body::after {
   min-height: 100svh;
   display: grid; grid-template-rows: auto 1fr auto;
 }
+/* หน้าคำถามล็อกความสูงเท่าจอพอดี ทุกอย่างจึงอยู่ในสายตาโดยไม่ต้องเลื่อน
+   ฉากอื่นยังใช้ min-height ตามเดิม เนื้อหายาวแค่ไหนก็เลื่อนอ่านได้ */
+[data-screen="survey"] .app { height: 100svh; }
+[data-screen="survey"] body { overflow: hidden; }
 
 .bar {
   display: flex; align-items: center; gap: var(--s3);
@@ -71,7 +75,7 @@ body::after {
 .brand svg { width: 22px; height: 22px; flex: 0 0 auto; }
 
 .main {
-  display: grid;
+  display: grid; min-height: 0;
   padding: 0 max(var(--pad), env(safe-area-inset-right))
            0 max(var(--pad), env(safe-area-inset-left));
 }
@@ -151,57 +155,109 @@ body::after {
   .intro__top { grid-template-columns: 148px 1fr 1fr; gap: var(--s7); align-items: start; }
 }
 
-/* ---------- หน้าคำถาม ---------- */
-.survey { display: grid; gap: var(--s5); justify-items: start; }
-.survey__head { display: flex; align-items: center; gap: var(--s4); width: 100%; max-width: var(--measure); }
-.survey__plate { width: 72px; flex: 0 0 auto; }
-.survey__meta { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.ticks { display: flex; gap: 4px; margin-top: var(--s2); }
+/* ---------- หน้าคำถาม ----------
+   ทุกอย่างต้องอยู่ในจอเดียว ผู้เล่นจะได้ตอบด้วยมืออย่างเดียวโดยไม่ต้องเลื่อน */
+.screen--fit {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-block: var(--s4);
+}
+
+/* จองที่ให้กล้องด้วยกริด ไม่ปล่อยให้ลอยทับ
+   เคยทำเป็นหน้าต่างลอยมุมขวาล่างแล้วมันบังตัวเลือกสองข้อสุดท้าย
+   ซึ่งขัดกับทั้งหมดที่พยายามทำอยู่ */
+.survey {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(92px, 26vw, 132px);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "bar     cam"
+    "stem    cam"
+    "choices choices";
+  column-gap: var(--s4);
+  row-gap: var(--s3);
+  align-content: stretch;
+}
+
+.survey__bar {
+  grid-area: bar;
+  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
+  padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft);
+}
+.ticks { display: flex; gap: 4px; flex: 1; min-width: 80px; }
 .ticks b { flex: 1; height: 3px; background: var(--line); transition: background .4s var(--ease); }
 .ticks b.is-done { background: var(--ink); }
 .ticks b.is-here { background: var(--blue); }
-.survey__stem { max-width: var(--measure); }
-.survey__actions { width: 100%; justify-content: space-between; }
 
-/* ตัวเลือกเป็นแถวคั่นเส้น เข้ากับกริดของหน้ามากกว่าการ์ดลอย */
-.choices { display: grid; width: 100%; max-width: var(--measure); }
+.survey__stem {
+  grid-area: stem;
+  /* ผูกขนาดกับความสูงจอด้วย เพราะจอเตี้ยต้องเสียสละพาดหัวให้ตัวเลือกก่อน */
+  font-size: clamp(1.125rem, 2.6vh + .35rem, 1.625rem);
+  font-weight: 700; line-height: 1.4; letter-spacing: -.01em;
+  max-width: 44ch;
+}
+
+/* ตัวเลือกแบ่งความสูงที่เหลือเท่า ๆ กัน จำนวนข้อจึงไม่ทำให้ล้นจอ */
+.choices {
+  grid-area: choices;
+  display: grid; grid-auto-rows: minmax(0, 1fr);
+  min-height: 0; width: 100%;
+}
 .choice {
   position: relative; isolation: isolate;
-  display: flex; align-items: center; gap: var(--s4);
-  width: 100%; min-height: 62px; padding: var(--s3) var(--s3) var(--s3) 0;
+  display: flex; align-items: center; gap: var(--s3);
+  width: 100%; min-height: 0; padding: var(--s2) var(--s3) var(--s2) 0;
   text-align: left; border-bottom: 1px solid var(--line-soft);
   cursor: pointer; touch-action: manipulation;
-  transition: padding-left .34s var(--out);
+  transition: padding-left .3s var(--out);
 }
 .choice::before {
   content: ""; position: absolute; inset: 0 auto 0 0; width: 0; z-index: -1;
-  background: var(--surface); transition: width .38s var(--out);
+  background: var(--surface); transition: width .34s var(--out);
 }
 .choice__key {
-  flex: 0 0 30px; height: 30px;
+  flex: 0 0 auto;
+  width: clamp(26px, 3.4vh, 34px); height: clamp(26px, 3.4vh, 34px);
   display: grid; place-items: center;
   font-family: var(--mono); font-size: var(--t-tag); font-weight: 500;
   color: var(--ink-2); border: 1px solid var(--line); border-radius: 50%;
-  transition: background .22s var(--ease), color .22s var(--ease),
-              border-color .22s var(--ease), transform .28s var(--out);
+  transition: background .2s var(--ease), color .2s var(--ease),
+              border-color .2s var(--ease), transform .26s var(--out);
 }
-.choice__text { flex: 1; min-width: 0; line-height: 1.55; }
+.choice__text {
+  flex: 1; min-width: 0;
+  font-size: clamp(.9375rem, 1.5vh + .3rem, 1.125rem);
+  line-height: 1.45;
+  /* ตัดบรรทัดที่สามทิ้งแทนการดันแถวให้สูงจนล้นจอ
+     ข้อความของเราไม่มีข้อไหนยาวถึงขนาดนั้นอยู่แล้ว */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 @media (hover: hover) {
   .choice:hover { padding-left: var(--s3); }
   .choice:hover::before { width: 100%; }
   .choice:hover .choice__key { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 }
+/* สถานะที่กล้องกำลังเล็งอยู่ ต้องเห็นชัดที่สุดในหน้านี้
+   เพราะเป็นการยืนยันเดียวที่ผู้เล่นได้ก่อนคำตอบถูกบันทึก */
 .choice.is-aimed { padding-left: var(--s3); }
-.choice.is-aimed::before { width: 100%; }
+.choice.is-aimed::before { width: 100%; background: var(--surface-2); }
 .choice.is-aimed .choice__key {
-  background: var(--blue); color: #fff; border-color: var(--blue); transform: scale(1.1);
+  background: var(--blue); color: #fff; border-color: var(--blue); transform: scale(1.12);
 }
 
-/* ---------- เวทีกล้อง ---------- */
-.cam { width: 100%; max-width: var(--measure); display: grid; gap: var(--s3); }
+/* ---------- เวทีกล้อง ----------
+   จอแนวตั้ง: หน้าต่างลอยมุมขวาล่าง ปล่อยความสูงทั้งหมดให้โจทย์กับตัวเลือก
+   จอแนวนอน: คอลัมน์ซ้ายเต็มความสูง เพราะมีที่ว่างพอ */
+.cam {
+  grid-area: cam;
+  min-height: 0;
+  display: grid; grid-template-rows: minmax(0, 1fr); gap: var(--s2);
+}
 .cam__stage {
-  position: relative; aspect-ratio: 4 / 3;
-  border-radius: var(--r-lg); overflow: hidden;
+  position: relative; min-height: 0;
+  border-radius: var(--r); overflow: hidden;
   background: #04060B; border: 1px solid var(--line);
 }
 .cam__video, .cam__skeleton {
@@ -210,35 +266,59 @@ body::after {
 }
 .cam__video { object-fit: cover; }
 .cam__skeleton { object-fit: fill; pointer-events: none; }
+.cam__hint { display: none; }
 
 .tally {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: clamp(96px, 28%, 148px); aspect-ratio: 1;
+  width: 62%; aspect-ratio: 1;
   display: grid; place-items: center; pointer-events: none;
   transition: opacity .2s var(--ease), transform .24s var(--out);
 }
-.tally.is-idle { opacity: .32; transform: translate(-50%, -50%) scale(.86); }
+.tally.is-idle { opacity: .34; transform: translate(-50%, -50%) scale(.84); }
 .tally__ring { position: absolute; inset: 0; transform: rotate(-90deg); }
-.tally__track { fill: rgba(4, 6, 11, .48); stroke: rgba(255, 255, 255, .28); stroke-width: 4; }
+.tally__track { fill: rgba(4, 6, 11, .5); stroke: rgba(255, 255, 255, .3); stroke-width: 5; }
 .tally__fill {
-  fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round;
+  fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round;
   stroke-dasharray: 283; transition: stroke-dashoffset .1s linear;
 }
 .tally__num {
   position: relative; font-family: var(--mono); font-weight: 500;
-  font-size: clamp(36px, 11vw, 58px); line-height: 1;
-  color: #fff; text-shadow: 0 2px 16px rgba(0, 0, 0, .9);
+  font-size: clamp(26px, 8vw, 40px); line-height: 1;
+  color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .9);
 }
 
 .cam__veil {
-  position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s5);
-  background: rgba(4, 6, 11, .9);
+  position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s2);
+  background: rgba(4, 6, 11, .92);
 }
-.cam__veil-in { display: grid; gap: var(--s3); justify-items: center; text-align: center; max-width: 24rem; }
-.cam__bar { width: min(220px, 60vw); height: 3px; background: rgba(255, 255, 255, .18); border-radius: 99px; }
+.cam__veil-in { display: grid; gap: var(--s2); justify-items: center; text-align: center; }
+.cam__veil-in .tag { font-size: .8125rem; line-height: 1.35; }
+.cam__veil-in .fine { display: none; }        /* หน้าต่างเล็กเกินกว่าจะใส่คำอธิบายยาว */
+.cam__bar { width: 80%; height: 3px; background: rgba(255, 255, 255, .18); border-radius: 99px; }
 .cam__bar i { display: block; height: 100%; background: #fff; border-radius: 99px; transition: width .25s var(--ease); }
-.cam__veil .btn { background: #fff; color: #04060B; border-color: #fff; }
-.cam__hint { min-height: 2.6em; }
+.cam__veil .btn { background: #fff; color: #04060B; border-color: #fff; min-height: 34px; padding: 0 var(--s3); font-size: .75rem; }
+
+/* จอแนวนอนที่กว้างพอ — กล้องกลับมาเป็นคอลัมน์ซ้ายเต็มความสูง */
+@media (min-width: 52rem) and (min-height: 34rem) {
+  .survey {
+    grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+    grid-template-areas:
+      "cam bar"
+      "cam stem"
+      "cam choices";
+    column-gap: var(--s7);
+  }
+  .cam { grid-template-rows: minmax(0, 1fr) auto; gap: var(--s3); }
+  .cam__stage { border-radius: var(--r-lg); }
+  .cam__hint {
+    display: block; text-align: center;
+    font-size: var(--t-tag); line-height: 1.5; color: var(--ink-3);
+  }
+  .cam__veil-in .fine { display: block; }
+  .cam__veil .btn { min-height: 42px; padding: 0 var(--s4); font-size: var(--t-tag); }
+  .tally { width: clamp(96px, 26%, 150px); }
+  .tally__num { font-size: clamp(34px, 5vw, 52px); }
+}
 
 /* ---------- ฉากประมวลผล ---------- */
 .cast { display: grid; gap: var(--s5); justify-items: center; text-align: center; place-content: center;
@@ -330,10 +410,4 @@ th {
 /* ---------- โหมดบูธ ----------
    ผู้เล่นยืนห่างจอ ตัวอักษรจึงต้องใหญ่กว่าปกติทุกระดับ */
 [data-mode="kiosk"] { --t-body: 1.1875rem; --t-tag: .9375rem; --t-lede: 1.3125rem; }
-@media (min-width: 64rem) {
-  [data-mode="kiosk"] .choices { grid-template-columns: 1fr 1fr; column-gap: var(--s7); }
-  [data-mode="kiosk"] .choices,
-  [data-mode="kiosk"] .survey__stem,
-  [data-mode="kiosk"] .survey__head,
-  [data-mode="kiosk"] .cam { max-width: 58rem; }
-}
+
