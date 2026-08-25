@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="night" data-mode="phone">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ผังดวงอาชีพ — แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล</title>
+<meta name="description" content="แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล 6 ข้อ อ่านผลเป็นผังดวงอาชีพ โดยหลักสูตรเทคโนโลยีสารสนเทศ มทร.ล้านนา ลำปาง">
+<meta name="theme-color" content="#0B1026">
+<meta name="color-scheme" content="dark light">
+
+<link rel="manifest" href="./app.webmanifest">
+<link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ผังดวงอาชีพ">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preload" href="./assets/fonts/trirong-600-thai.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/ibm-plex-sans-thai-400-thai.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./src/fonts.css">
+<link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+
+<div class="sky" aria-hidden="true"><svg class="sky__rim" id="skyRim"></svg></div>
+
+<div class="app">
+
+  <header class="bar">
+    <div class="seal">
+      <svg class="seal__mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1"/>
+        <polygon points="12,4.5 18.5,8.25 18.5,15.75 12,19.5 5.5,15.75 5.5,8.25"
+                 fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+      </svg>
+      <span class="seal__text">ผังดวงอาชีพ · IT มทร.ล้านนา ลำปาง</span>
+    </div>
+    <span class="bar__spacer"></span>
+    <button class="btn btn--chip" id="btnTheme">กลางวัน</button>
+    <button class="btn btn--chip" id="btnKiosk">โหมดบูธ</button>
+  </header>
+
+  <main class="main">
+
+    <!-- ฉากเปิด -->
+    <section class="screen intro is-active" id="screen-intro" aria-labelledby="introTitle">
+      <div class="stagger">
+        <div class="plate-wrap intro__plate"><svg id="plateIntro"></svg></div>
+        <p class="eyebrow eyebrow--th">แม่หมอ VR · หลักสูตรเทคโนโลยีสารสนเทศ</p>
+        <h1 class="display intro__title" id="introTitle">ผังดวง<em>อาชีพ</em></h1>
+        <p class="lede" style="margin-inline:auto">
+          แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล ตอบ 6 ข้อ
+          แล้วอ่านผลเป็นผังดวงหกแกนที่บอกว่าคุณเอนไปทางสายงานใด
+        </p>
+        <div>
+          <ul class="facts">
+            <li>ใช้เวลา 3 นาที</li>
+            <li>ไม่มีคำตอบถูกผิด</li>
+            <li>ไม่เก็บข้อมูลส่วนตัว</li>
+            <li>เล่นได้แม้ไม่มีสัญญาณ</li>
+          </ul>
+          <div class="actions" style="margin-inline:auto">
+            <button class="btn" id="btnStart">เริ่มทำแบบสำรวจ</button>
+            <button class="btn btn--quiet" id="btnPathsFromIntro">ดูสายอาชีพทั้ง 6</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ฉากคำถาม -->
+    <section class="screen survey" id="screen-survey" aria-labelledby="stem">
+      <div class="survey__head">
+        <div class="plate-wrap plate-wrap--mini"><svg id="plateSurvey"></svg></div>
+        <div class="survey__meta">
+          <p class="survey__domain" id="domain"></p>
+          <p class="survey__count" id="count" aria-live="polite"></p>
+          <div class="ticks" id="ticks" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <h2 class="survey__stem" id="stem"></h2>
+
+      <div class="choices" id="choices" role="group" aria-labelledby="stem"></div>
+
+      <!-- กล่องกล้อง: แสดงเฉพาะโหมดบูธ -->
+      <div class="cam u-hidden" id="cam">
+        <div class="cam__head">
+          <span id="camTitle">ยกมือหน้ากล้องเหนือหมายเลขที่เลือก</span>
+          <button class="btn btn--chip" id="btnCamToggle">ปิดกล้อง</button>
+        </div>
+        <div class="cam__stage">
+          <video class="cam__video" id="camVideo" autoplay muted playsinline aria-hidden="true"></video>
+          <div class="cam__zones" id="camZones" aria-hidden="true"></div>
+          <div class="cam__off u-hidden" id="camOff">กล้องยังไม่พร้อม — แตะเลือกคำตอบด้านบนได้ตามปกติ</div>
+        </div>
+        <p class="cam__hint" id="camHint" aria-live="polite"></p>
+        <div class="cam__ctl">
+          <label for="camSens">ความไวกล้อง</label>
+          <input id="camSens" type="range" min="1" max="5" step="1" value="4">
+          <button class="btn btn--chip" id="btnRecal">จำพื้นหลังใหม่</button>
+        </div>
+        <p class="fine" style="text-align:center">
+          ภาพจากกล้องใช้ตรวจจับการเคลื่อนไหวภายในเครื่องเท่านั้น ไม่ถูกบันทึกและไม่ถูกส่งออก
+        </p>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn--quiet u-hidden" id="btnBack">ย้อนกลับหนึ่งข้อ</button>
+      </div>
+    </section>
+
+    <!-- ฉากประมวลผล -->
+    <section class="screen cast" id="screen-cast" aria-labelledby="castTitle">
+      <div class="plate-wrap plate-wrap--cast"><svg id="plateCast"></svg></div>
+      <h2 class="title" id="castTitle">กำลังประมวลผลคำตอบของคุณ</h2>
+      <p class="cast__status num" id="castStatus"></p>
+    </section>
+
+    <!-- ฉากผลลัพธ์ -->
+    <section class="screen result" id="screen-result" aria-labelledby="resultName">
+      <div class="result__head">
+        <p class="eyebrow">ผลการสำรวจ</p>
+        <div class="plate-wrap plate-wrap--hero"><svg id="plateResult"></svg></div>
+        <h2 class="title result__name" id="resultName"></h2>
+        <p class="lede" id="resultTagline"></p>
+      </div>
+
+      <div class="card">
+        <div class="card__block">
+          <h3 class="card__label">ผังดวงของคุณบอกอะไร</h3>
+          <p class="card__body" id="resultReading"></p>
+        </div>
+        <div class="card__block">
+          <h3 class="card__label">ทำไมจึงเหมาะกับสายนี้</h3>
+          <p class="card__body" id="resultFit"></p>
+        </div>
+        <div class="card__block">
+          <h3 class="card__label">จุดแข็งที่ประเมินได้</h3>
+          <ul class="bullets" id="resultStrengths"></ul>
+        </div>
+        <div class="card__block">
+          <h3 class="card__label">คะแนนรายแกน</h3>
+          <div class="axes" id="resultAxes"></div>
+        </div>
+        <div class="card__block">
+          <h3 class="card__label">ตัวอย่างอาชีพ</h3>
+          <div class="chips" id="resultJobs"></div>
+        </div>
+        <div class="card__block">
+          <h3 class="card__label">วิชาที่เกี่ยวข้องในหลักสูตร</h3>
+          <p class="card__body" id="resultStudy"></p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnAgain">ทำแบบสำรวจอีกครั้ง</button>
+        <button class="btn btn--quiet" id="btnPaths">ดูสายอาชีพทั้ง 6</button>
+      </div>
+    </section>
+
+    <!-- หน้ารวมหกสาย -->
+    <section class="screen" id="screen-paths" aria-labelledby="pathsTitle">
+      <div class="result__head">
+        <p class="eyebrow">อ้างอิง</p>
+        <h2 class="title" id="pathsTitle">สายอาชีพทั้ง 6 แกน</h2>
+        <p class="lede">แต่ละตราคือผังดวงอันเดียวกัน ที่ยื่นออกเพียงแกนเดียว</p>
+      </div>
+      <div class="paths" id="pathsList"></div>
+      <div class="actions"><button class="btn btn--quiet" id="btnPathsBack">ย้อนกลับ</button></div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span id="netState">ใช้งานแบบออฟไลน์ได้</span>
+    <button class="btn btn--link" id="btnPanel">บันทึกผู้เข้าร่วม</button>
+  </footer>
+
+</div>
+
+<!-- แผงสถิติสำหรับเจ้าหน้าที่บูธ -->
+<div class="panel u-hidden" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+  <div class="panel__inner">
+    <div class="panel__head">
+      <p class="eyebrow eyebrow--th">สำหรับเจ้าหน้าที่บูธ</p>
+      <h2 class="title" id="panelTitle">บันทึกผู้เข้าร่วมกิจกรรม</h2>
+      <p class="fine">เก็บอยู่ในเครื่องนี้เท่านั้น ไม่ถูกส่งออกไปที่ใด</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b class="stat__value" id="statToday">0</b><span class="stat__label">วันนี้</span></div>
+      <div class="stat"><b class="stat__value" id="statAll">0</b><span class="stat__label">ทั้งหมด</span></div>
+      <div class="stat"><b class="stat__value" id="statAvg">—</b><span class="stat__label">เวลาเฉลี่ยต่อคน</span></div>
+      <div class="stat"><b class="stat__value stat__value--text" id="statTop">—</b><span class="stat__label">ผลที่พบบ่อยที่สุด</span></div>
+    </div>
+
+    <div>
+      <h3 class="card__label" style="margin-bottom:12px">การกระจายของผลลัพธ์</h3>
+      <div class="dist" id="dist"></div>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>วันที่</th><th>เวลา</th><th>รอบ</th><th>ผลการสำรวจ</th><th>ใช้เวลา</th></tr></thead>
+        <tbody id="logRows"></tbody>
+      </table>
+    </div>
+
+    <div class="panel__actions">
+      <button class="btn btn--quiet" id="btnCsv">ดาวน์โหลด CSV</button>
+      <button class="btn btn--quiet" id="btnClear">ล้างข้อมูล</button>
+      <button class="btn" id="btnPanelClose">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="motion" width="96" height="54" class="u-hidden" aria-hidden="true"></canvas>
+
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>

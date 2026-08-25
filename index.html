@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#210E3A">
+<meta name="description" content="กิจกรรมทำนายสายอาชีพไอที ตอบคำถาม 6 ข้อด้วยการยกมือหน้ากล้องหรือแตะหน้าจอ">
+<title>ผู้พิทักษ์แห่งโชคชะตา — ทำนายสายอาชีพในอนาคต</title>
+<style>
+/* ===================================================================
+   ผู้พิทักษ์แห่งโชคชะตา — สไตล์ชีต (ออกแบบจากจอเล็กขึ้นไปหาจอใหญ่ mobile-first)
+   ลำดับ: ตัวแปร → พื้นฐาน → โครงหน้า → ส่วนประกอบ → แต่ละฉาก → จอใหญ่
+   =================================================================== */
+
+/* ---------- 1. ตัวแปร ---------- */
+:root{
+  /* สี */
+  --bg1:#3C1C63; --bg2:#210E3A; --bg3:#140823;
+  --text:#FFF7EA; --text-2:#DCCBEE;
+  --gold:#FFD684; --gold-line:rgba(255,214,132,.34);
+  --card:rgba(255,255,255,.07);
+  --card-hover:rgba(255,214,132,.16);
+  --panel:rgba(12,5,24,.97);
+  --sunken:rgba(0,0,0,.16);
+  --focus:#5BE7CB;
+  /* ตัวอักษร — ภาษาไทยมีสระบนล่าง จึงเว้นบรรทัดกว้างกว่าปกติ */
+  --base:18px;
+  --lh:1.72;
+  --font-display:"Leelawadee UI","Noto Sans Thai","Sarabun",Tahoma,sans-serif;
+  --font-body:"Sarabun","Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
+  /* ระยะและรูปทรง */
+  --pad:16px;            /* ระยะขอบซ้ายขวาของหน้า */
+  --r-lg:22px; --r-md:16px;
+  --tap:48px;            /* ขนาดเล็กสุดของปุ่มที่นิ้วแตะได้สบาย */
+  --maxw:660px;          /* ความกว้างสูงสุดของเนื้อหาที่อ่านเป็นย่อหน้า */
+  --top-h:60px;          /* ที่ว่างสำหรับแถบเครื่องมือด้านบน */
+  --bot-h:52px;          /* ที่ว่างสำหรับแถบด้านล่าง */
+}
+body[data-theme="light"]{
+  --bg1:#FFF6E4; --bg2:#FDEBD2; --bg3:#F7E2CB;
+  --text:#2A1740; --text-2:#584070;
+  --gold:#8A5A00; --gold-line:rgba(138,90,0,.32);
+  --card:#FFFFFF; --card-hover:#FFF0D2; --panel:rgba(255,250,240,.98);
+  --sunken:rgba(0,0,0,.04);
+  --focus:#0F7A66;
+}
+
+/* ---------- 2. พื้นฐาน ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;overflow-x:hidden;
+  background:radial-gradient(125% 95% at 50% 0%,var(--bg1) 0%,var(--bg2) 48%,var(--bg3) 100%);
+  background-attachment:fixed;
+  color:var(--text);font-family:var(--font-body);font-size:var(--base);line-height:var(--lh);
+}
+h1,h2,h3,p,ul{margin:0}
+button,input{font-family:inherit}
+.hidden{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.only-lg{display:none}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+body[data-theme="light"] #stars{display:none}
+
+/* ---------- 3. โครงหน้า ---------- */
+.wrap{
+  position:relative;z-index:1;
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:calc(var(--top-h) + env(safe-area-inset-top) + 8px)
+          max(var(--pad),env(safe-area-inset-right))
+          calc(var(--bot-h) + env(safe-area-inset-bottom) + 8px)
+          max(var(--pad),env(safe-area-inset-left));
+}
+/* margin แนวตั้ง auto = จัดกึ่งกลางเมื่อเนื้อหาสั้น แต่ไม่ล้นไปทับแถบบน-ล่างเมื่อเนื้อหายาว
+   ต่างจาก align-items:center ที่ล้นออกนอก padding ทั้งสองด้านจนตัวหนังสือทับ footer */
+.stage{width:min(920px,100%);margin-block:auto;text-align:center;animation:rise .4s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* แถบเครื่องมือด้านบน — บังคับให้อยู่บรรทัดเดียวเสมอ ความสูงจะได้คงที่ */
+.tools{
+  position:fixed;top:0;left:0;right:0;z-index:6;
+  display:flex;gap:8px;flex-wrap:nowrap;
+  justify-content:flex-start;justify-content:safe center;   /* safe = ถ้าล้นจอจะไม่ตัดปุ่มซ้ายทิ้ง */
+  overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+  padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left));
+  padding-top:calc(10px + env(safe-area-inset-top));
+  background:linear-gradient(180deg,rgba(0,0,0,.42),rgba(0,0,0,.12) 70%,transparent);
+}
+.tools::-webkit-scrollbar{display:none}
+body[data-theme="light"] .tools{background:linear-gradient(180deg,rgba(255,246,228,.92),rgba(255,246,228,.5) 70%,transparent)}
+
+footer{
+  position:fixed;bottom:0;left:0;right:0;z-index:6;text-align:center;
+  font-size:14px;color:var(--text-2);
+  padding:6px max(10px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+  background:linear-gradient(0deg,rgba(0,0,0,.42),rgba(0,0,0,.12) 70%,transparent);
+}
+body[data-theme="light"] footer{background:linear-gradient(0deg,rgba(255,246,228,.92),rgba(255,246,228,.5) 70%,transparent)}
+footer button{background:none;border:0;color:var(--text-2);cursor:pointer;font:inherit;
+  text-decoration:underline;min-height:40px;padding:0 6px}
+
+/* ---------- 4. ส่วนประกอบร่วม ---------- */
+.eyebrow{font-family:var(--font-display);font-size:.82em;letter-spacing:.1em;
+  color:var(--gold);margin-bottom:6px}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,8.4vw,52px);
+  line-height:1.2}
+h1 span{color:var(--gold)}
+.lead{font-size:1em;color:var(--text-2);max-width:min(100%,40ch);margin:14px auto 0}
+.small{font-size:.84em;color:var(--text-2);max-width:min(100%,44ch);margin-left:auto;margin-right:auto}
+
+.rule{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0}
+.rule i{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line))}
+.rule i+i{background:linear-gradient(90deg,var(--gold-line),transparent)}
+.rule b{width:9px;height:9px;background:var(--gold);transform:rotate(45deg)}
+
+/* ปุ่มหลัก */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:1.02em;font-weight:700;
+  padding:14px 28px;min-height:56px;border-radius:999px;border:2px solid transparent;
+  background:linear-gradient(180deg,#FFE9BC,#FFD07A);color:#3A1D00;cursor:pointer;
+  box-shadow:0 8px 22px rgba(0,0,0,.28);
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:transform .12s,box-shadow .12s;
+}
+.btn.ghost{background:var(--card);color:var(--text);border-color:var(--gold-line);box-shadow:none}
+.btn.small{font-size:.92em;padding:11px 22px;min-height:var(--tap)}
+.btn:active{transform:scale(.98)}
+@media(hover:hover){.btn:hover{transform:translateY(-2px)}}
+
+/* ปุ่มรอง (แถบเครื่องมือ และปุ่มเล็กในกล่อง) */
+.tool{
+  flex:0 0 auto;font-family:var(--font-body);font-size:14px;line-height:1;
+  padding:0 14px;min-height:44px;border-radius:999px;
+  border:1.5px solid var(--gold-line);background:var(--card);color:var(--text);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap;
+}
+@media(hover:hover){.tool:hover{background:var(--card-hover)}}
+.tool:active{background:var(--card-hover)}
+
+/* แถวปุ่ม — จอเล็กเรียงลงล่างเต็มความกว้าง แตะง่ายกว่าเรียงข้างกัน */
+.row{display:flex;flex-direction:column;align-items:stretch;gap:10px;
+  max-width:420px;margin:22px auto 0}
+.row .btn{width:100%}
+.row .btn.small{width:auto;align-self:center}
+
+/* ---------- 5. หน้าเริ่ม ---------- */
+.seer{position:relative;width:min(228px,56vw);margin:2px auto 0}
+.seer svg.fig{display:block;width:100%;height:auto}
+.orb-holder{position:relative;width:52%;margin:-19% auto 0;aspect-ratio:1;z-index:2}
+.orb{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle at 34% 28%,#7B4CBE,#33135A 62%,#1B0A31);
+  box-shadow:0 0 0 3px var(--gold),0 0 46px rgba(140,80,210,.6),inset 0 0 40px rgba(0,0,0,.55);
+  animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);
+  filter:saturate(.6) brightness(.95);opacity:.6;mix-blend-mode:screen}
+.orb-glass{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.55),transparent 44%)}
+
+/* ข้อเท็จจริงสั้น ๆ กวาดตาอ่านได้เร็วกว่าประโยคยาว */
+.facts{list-style:none;padding:0;margin:16px auto 0;
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.facts li{font-size:.8em;color:var(--text-2);padding:6px 14px;
+  border-radius:999px;border:1px solid var(--gold-line);background:var(--card)}
+
+/* ---------- 6. หน้าคำถาม ---------- */
+/* คำถามกับตัวเลือกต้องติดกันเสมอ — กล่องกล้องเป็นของเสริม จึงอยู่ท้ายสุด */
+#s-quiz{display:flex;flex-direction:column}
+#s-quiz .progress{order:1}
+#s-quiz .q{order:2}
+#s-quiz .qdiv{order:3}
+#s-quiz .choices{order:4}
+#s-quiz .campanel{order:5}
+#s-quiz .row{order:6}
+
+.progress{width:100%;max-width:420px;margin:0 auto 14px}
+.progress p{font-family:var(--font-display);font-size:.86em;color:var(--gold);margin-bottom:8px}
+.progress .track{display:flex;gap:6px;justify-content:center}
+.progress b{flex:1;max-width:64px;height:7px;border-radius:99px;
+  background:var(--card);border:1px solid var(--gold-line)}
+.progress b.on{background:var(--gold);border-color:var(--gold)}
+
+/* โจทย์แบ่งสองชั้น — บรรทัดบนบอก "สถานการณ์" บรรทัดล่างคือ "สิ่งที่ถาม"
+   ตาจะจับบรรทัดใหญ่ก่อนแล้วค่อยย้อนอ่านฉาก ไม่ต้องไล่อ่านประโยคยาวทีเดียวจบ */
+.q{font-family:var(--font-display);font-size:clamp(21px,5.2vw,30px);line-height:1.35;
+  max-width:min(100%,26ch);margin:0 auto}
+.q-scene{display:block;font-family:var(--font-body);font-size:max(15px,.6em);font-weight:400;
+  line-height:1.5;color:var(--text-2);margin-bottom:7px}
+/* จุดนำสายตาสีทองหน้าบรรทัดสถานการณ์ บอกจุดเริ่มอ่าน */
+.q-scene::before{content:"";display:inline-block;width:7px;height:7px;margin-right:9px;
+  background:var(--gold);transform:rotate(45deg);vertical-align:middle;position:relative;top:-1px}
+.q-ask{display:block}
+
+/* เส้นคั่นพร้อมป้าย — นำสายตาจากโจทย์ลงสู่ตัวเลือก */
+.qdiv{display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;max-width:var(--maxw);margin:14px auto 0}
+.qdiv i{flex:1;height:1px;max-width:110px;background:linear-gradient(90deg,transparent,var(--gold-line))}
+.qdiv i:last-child{background:linear-gradient(90deg,var(--gold-line),transparent)}
+.qdiv span{font-family:var(--font-display);font-size:.74em;color:var(--gold);white-space:nowrap}
+
+/* ตัวเลือก — ยิ่งกล่องเตี้ยและไอคอนเล็ก ยิ่งเห็นครบทุกข้อในจอเดียว เปรียบเทียบง่ายกว่า */
+.choices{display:grid;gap:9px;width:100%;max-width:var(--maxw);margin:12px auto 0;text-align:left}
+.choice{
+  display:flex;gap:11px;align-items:center;width:100%;
+  padding:10px 12px;min-height:62px;border-radius:14px;cursor:pointer;
+  background:var(--card);border:1.5px solid var(--gold-line);color:var(--text);
+  font-family:var(--font-body);font-size:.92em;line-height:1.42;text-align:left;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:background .14s,border-color .14s,transform .12s;
+}
+.choice span:last-child{flex:1;min-width:0}
+.choice .num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--gold);color:#3A1D00;
+  display:grid;place-items:center;font-weight:700;font-size:13px;font-family:var(--font-display)}
+.choice svg{flex:0 0 38px;width:38px;height:38px}
+.choice:active{transform:scale(.985);background:var(--card-hover)}
+@media(hover:hover){.choice:hover{background:var(--card-hover);border-color:var(--gold);transform:translateY(-2px)}}
+.choice.hot{border-color:var(--gold);background:var(--card-hover)}
+
+/* กล่องกล้อง — เป็นทางเลือกเสริม จึงจัดเป็นกล่องแยกที่ดูเบากว่าตัวเลือก */
+.campanel{width:100%;max-width:var(--maxw);margin:18px auto 0;padding:14px;
+  border:1.5px solid var(--gold-line);border-radius:var(--r-lg);background:var(--sunken)}
+.campanel-head{font-family:var(--font-display);font-size:.92em;font-weight:700;
+  color:var(--gold);margin-bottom:10px}
+.campanel.off{padding:12px 14px}
+.campanel.off .camwrap,.campanel.off .camctl,.campanel.off .camnote{display:none}
+.campanel.off .campanel-head{margin-bottom:0;color:var(--text-2);font-weight:400}
+
+.camwrap{position:relative;width:100%;margin:0 auto;border-radius:var(--r-md);overflow:hidden;
+  border:1.5px solid var(--gold-line);background:#100722;aspect-ratio:16/9}
+#cam2{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:.8}
+.zones{position:absolute;inset:0;display:flex}
+.zone{flex:1;position:relative;display:grid;place-items:center;
+  border-right:2px solid rgba(255,255,255,.28)}
+.zone:last-child{border-right:0}
+.zone .zfill{position:absolute;bottom:0;left:0;right:0;height:0;
+  background:rgba(255,214,132,.6);transition:height .08s linear}
+.zone .znum{position:relative;font-family:var(--font-display);font-weight:700;color:#fff;
+  font-size:clamp(22px,6.4vw,32px);text-shadow:0 2px 8px #000,0 0 3px #000}
+.zone.hot{box-shadow:inset 0 0 0 4px var(--gold);background:rgba(255,214,132,.16)}
+.camoff{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,8,35,.85);
+  color:#FFF7EA;font-size:.86em;padding:12px;text-align:center}
+
+.camnote{font-size:.82em;color:var(--text-2);margin-top:10px;text-align:center;min-height:1.4em}
+.camnote-fine{font-size:.76em;opacity:.85;min-height:0;line-height:1.6}
+.camctl{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.camctl label{font-size:.8em;color:var(--text-2)}
+.camctl input[type=range]{width:150px;height:32px;accent-color:var(--gold);touch-action:manipulation}
+
+/* ---------- 7. หน้ากำลังทำนาย ---------- */
+.spin{width:clamp(120px,36vw,150px);height:auto;margin:0 auto;display:block;
+  animation:sway 2.4s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.bar{width:min(340px,80vw);height:10px;border-radius:99px;background:var(--card);
+  border:1px solid var(--gold-line);margin:22px auto 0;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--gold);transition:width .12s linear}
+
+/* ---------- 8. หน้าผลทำนาย ---------- */
+.badge{font-family:var(--font-display);font-size:.78em;letter-spacing:.06em;color:#3A1D00;
+  background:var(--gold);display:inline-block;padding:7px 16px;border-radius:999px}
+.title{font-family:var(--font-display);font-size:clamp(26px,6.6vw,42px);line-height:1.25;
+  margin-top:12px;color:var(--gold)}
+.avatar{width:min(170px,44vw);height:auto;margin:8px auto 0;display:block}
+
+.card{background:var(--card);border:2px solid var(--gold-line);border-radius:var(--r-lg);
+  padding:18px;width:100%;max-width:var(--maxw);margin:20px auto 0;text-align:left}
+.card h3{font-family:var(--font-display);font-size:.88em;font-weight:700;letter-spacing:.02em;
+  color:var(--gold);margin-bottom:6px}
+.card p{margin-bottom:20px;line-height:1.82}
+.card > :last-child{margin-bottom:0}
+
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tag{font-size:.82em;padding:7px 14px;border-radius:999px;background:var(--card-hover);
+  border:1.5px solid var(--gold-line)}
+
+/* แถบพลัง — จอเล็กวางชื่อไว้เหนือแถบ อ่านง่ายกว่าบีบชื่อให้แคบ */
+.power div{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:14px}
+.power div:last-child{margin-bottom:0}
+.power span{font-size:.86em;color:var(--text-2)}
+.power i{height:12px;border-radius:99px;background:var(--sunken);position:relative;overflow:hidden;
+  border:1px solid var(--gold-line)}
+.power i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--gold)}
+
+.all-item{display:flex;gap:13px;align-items:center;margin-bottom:16px}
+.all-item:last-child{margin-bottom:0}
+.all-item svg{flex:0 0 54px;width:54px;height:54px}
+.all-item b{font-family:var(--font-display);color:var(--gold);display:block;line-height:1.4}
+.all-item .small{display:block;margin:0;max-width:none}
+
+/* ---------- 9. แผงบันทึกผู้เข้าร่วม ---------- */
+.panel{position:fixed;inset:0;z-index:9;background:var(--panel);overflow:auto;
+  overscroll-behavior:contain;
+  padding:calc(20px + env(safe-area-inset-top)) max(var(--pad),env(safe-area-inset-right))
+          calc(24px + env(safe-area-inset-bottom)) max(var(--pad),env(safe-area-inset-left))}
+.panel .inner{max-width:780px;margin:0 auto;text-align:left}
+.panel .row{max-width:none;margin-top:18px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.stat div b{display:block;font-family:var(--font-display);font-size:30px;color:var(--gold);line-height:1.2}
+.stat div span{font-size:.8em;color:var(--text-2)}
+.tablewrap{margin-top:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  border:1px solid var(--gold-line);border-radius:var(--r-md)}
+table{width:100%;min-width:520px;border-collapse:collapse;font-size:.84em}
+th,td{padding:10px 12px;border-bottom:1px solid var(--gold-line);text-align:left;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{color:var(--gold);font-size:.92em}
+
+/* ---------- 10. จอกลาง (แท็บเล็ต) ---------- */
+@media(min-width:600px){
+  :root{--pad:20px;--top-h:64px}
+  .only-lg{display:inline}
+  .tools{overflow:visible}
+  .tool{font-size:15px;padding:0 16px}
+  .row{flex-direction:row;justify-content:center;flex-wrap:wrap;max-width:none;gap:12px}
+  .row .btn{width:auto}
+  .lead{font-size:1.04em}
+  .seer{width:min(280px,48vw)}
+  .choices{gap:10px}
+  .choice{padding:12px 14px;gap:13px;min-height:70px;font-size:.95em}
+  .choice .num{flex-basis:26px;height:26px;font-size:14px}
+  .choice svg{flex-basis:44px;width:44px;height:44px}
+  .card{padding:24px}
+  .campanel{padding:18px}
+  .stat{display:flex;gap:28px;flex-wrap:wrap}
+  .panel .row{justify-content:flex-start}
+}
+
+/* ---------- 11. จอใหญ่ (คอมพิวเตอร์ / บูธ) ---------- */
+@media(min-width:900px){
+  :root{--base:19px}
+  .seer{width:min(340px,60vw)}
+  .choices{max-width:860px;grid-template-columns:1fr 1fr}
+  .campanel{max-width:860px}
+  .power div{grid-template-columns:minmax(0,38%) 1fr;align-items:center;gap:14px;margin-bottom:10px}
+}
+
+/* ---------- 12. โหมดตัวอักษรใหญ่ (ต้องอยู่ท้ายสุดเพื่อทับค่าด้านบน) ---------- */
+body[data-size="lg"]{--base:21px}
+body[data-size="lg"] .choice{min-height:78px;font-size:.96em}
+body[data-size="lg"] .camctl,body[data-size="lg"] .camnote-fine{font-size:1em}
+@media(min-width:900px){body[data-size="lg"]{--base:24px}}
+
+/* ---------- 13. ลดการเคลื่อนไหว ---------- */
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body data-theme="dark" data-size="normal">
+
+<!-- ===== คลังภาพการ์ตูน (SVG) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <g id="g-bg"><circle cx="24" cy="24" r="23" fill="#FFF1D6"/></g>
+</defs>
+
+<!-- ไอคอนตัวเลือก : viewBox 0 0 48 48 -->
+<symbol id="ic-box" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="11" y="19" width="26" height="18" rx="3" fill="#F2A65A" stroke="#3B2555" stroke-width="2"/><rect x="9" y="13" width="30" height="8" rx="2.5" fill="#FFC98B" stroke="#3B2555" stroke-width="2"/><path d="M24 13v24" stroke="#3B2555" stroke-width="2"/></symbol>
+<symbol id="ic-palette" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 11c8 0 14 5 14 11 0 4-3 5-6 5h-3c-2 0-3 1-3 3s1 2 1 4-2 3-4 3c-7 0-13-6-13-13S16 11 24 11z" fill="#7ED9C3" stroke="#3B2555" stroke-width="2"/><circle cx="19" cy="20" r="2.3" fill="#FF7EA8"/><circle cx="27" cy="19" r="2.3" fill="#FFD684"/><circle cx="18" cy="28" r="2.3" fill="#8B7BE8"/></symbol>
+<symbol id="ic-gamepad" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="8" y="18" width="32" height="15" rx="7.5" fill="#8B7BE8" stroke="#3B2555" stroke-width="2"/><path d="M16 22v7M12.5 25.5h7" stroke="#FFF7EA" stroke-width="2.4" stroke-linecap="round"/><circle cx="31" cy="23.5" r="2.4" fill="#FF7EA8"/><circle cx="35" cy="28" r="2.4" fill="#7ED9C3"/></symbol>
+<symbol id="ic-wrench" viewBox="0 0 48 48"><use href="#g-bg"/><circle cx="20" cy="20" r="8" fill="none" stroke="#3B2555" stroke-width="3"/><circle cx="20" cy="20" r="3" fill="#FFD684" stroke="#3B2555" stroke-width="2"/><path d="M26 26l9 9" stroke="#8AA6D8" stroke-width="6" stroke-linecap="round"/><path d="M26 26l9 9" stroke="#3B2555" stroke-width="2"/></symbol>
+<symbol id="ic-search" viewBox="0 0 48 48"><use href="#g-bg"/><circle cx="22" cy="21" r="9" fill="#BFEFE4" stroke="#3B2555" stroke-width="2.4"/><path d="M29 28l7 7" stroke="#3B2555" stroke-width="3.4" stroke-linecap="round"/><path d="M18 23v-4M22 23v-7M26 23v-3" stroke="#0F7A66" stroke-width="2.2" stroke-linecap="round"/></symbol>
+<symbol id="ic-hammer" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="12" y="14" width="20" height="9" rx="2.5" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><path d="M21 23l3 13" stroke="#C98B4B" stroke-width="6" stroke-linecap="round"/><path d="M21 23l3 13" stroke="#3B2555" stroke-width="2"/></symbol>
+<symbol id="ic-heart" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 35s-11-6.6-11-14a6.4 6.4 0 0 1 11-4.4A6.4 6.4 0 0 1 35 21c0 7.4-11 14-11 14z" fill="#FF7EA8" stroke="#3B2555" stroke-width="2"/><path d="M33 13l1.4 3 3 1.4-3 1.4L33 22l-1.4-3-3-1.4 3-1.4z" fill="#FFD684"/></symbol>
+<symbol id="ic-shield" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 11l11 4v10c0 7-5 11-11 13-6-2-11-6-11-13V15z" fill="#7ED9C3" stroke="#3B2555" stroke-width="2"/><path d="M19 24l4 4 7-8" fill="none" stroke="#0F5F50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-robot" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 9v5" stroke="#3B2555" stroke-width="2"/><circle cx="24" cy="8" r="2.4" fill="#FFD684" stroke="#3B2555" stroke-width="1.6"/><rect x="12" y="14" width="24" height="20" rx="6" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><circle cx="19" cy="23" r="2.6" fill="#3B2555"/><circle cx="29" cy="23" r="2.6" fill="#3B2555"/><path d="M20 29h8" stroke="#3B2555" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="ic-phone" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="15" y="10" width="18" height="28" rx="4" fill="#FFF7EA" stroke="#3B2555" stroke-width="2"/><rect x="18.5" y="15" width="5" height="5" rx="1.4" fill="#FF7EA8"/><rect x="25.5" y="15" width="5" height="5" rx="1.4" fill="#7ED9C3"/><rect x="18.5" y="22" width="5" height="5" rx="1.4" fill="#FFD684"/><rect x="25.5" y="22" width="5" height="5" rx="1.4" fill="#8B7BE8"/><path d="M21 33h6" stroke="#3B2555" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="ic-planet" viewBox="0 0 48 48"><use href="#g-bg"/><circle cx="24" cy="23" r="9" fill="#8B7BE8" stroke="#3B2555" stroke-width="2"/><path d="M20 20c3 2 6 2 9 0M20 27c3 2 6 2 9 0" stroke="#FFF7EA" stroke-width="1.6"/><ellipse cx="24" cy="25" rx="16" ry="5" fill="none" stroke="#FFD684" stroke-width="2.6" transform="rotate(-18 24 25)"/></symbol>
+<symbol id="ic-door" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="14" y="11" width="20" height="26" rx="3" fill="#C98B4B" stroke="#3B2555" stroke-width="2"/><rect x="18" y="15" width="12" height="14" rx="2" fill="#FFD684"/><circle cx="30" cy="26" r="1.7" fill="#3B2555"/></symbol>
+<symbol id="ic-wall" viewBox="0 0 48 48"><use href="#g-bg"/><g stroke="#3B2555" stroke-width="2" fill="#E58B7B"><rect x="11" y="15" width="12" height="7"/><rect x="25" y="15" width="12" height="7"/><rect x="11" y="24" width="26" height="7"/><rect x="11" y="33" width="12" height="4"/><rect x="25" y="33" width="12" height="4"/></g></symbol>
+<symbol id="ic-flask" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M20 11h8v9l7 12a4 4 0 0 1-3.5 6h-15A4 4 0 0 1 13 32l7-12z" fill="#BFEFE4" stroke="#3B2555" stroke-width="2"/><path d="M16 30h16" stroke="#3B2555" stroke-width="1.6"/><circle cx="21" cy="33" r="2" fill="#7ED9C3"/><circle cx="27" cy="31" r="1.5" fill="#FF7EA8"/></symbol>
+<symbol id="ic-chart" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M12 35h24" stroke="#3B2555" stroke-width="2.4" stroke-linecap="round"/><rect x="15" y="24" width="5.5" height="10" fill="#7ED9C3" stroke="#3B2555" stroke-width="1.8"/><rect x="22" y="18" width="5.5" height="16" fill="#FFD684" stroke="#3B2555" stroke-width="1.8"/><rect x="29" y="13" width="5.5" height="21" fill="#FF7EA8" stroke="#3B2555" stroke-width="1.8"/></symbol>
+<symbol id="ic-chat" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M10 15h20v13H19l-6 5v-5h-3z" fill="#FFF7EA" stroke="#3B2555" stroke-width="2"/><path d="M22 20h16v11h-3v4l-5-4h-8z" fill="#FFD684" stroke="#3B2555" stroke-width="2"/></symbol>
+<symbol id="ic-eye" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M9 24s6-9 15-9 15 9 15 9-6 9-15 9-15-9-15-9z" fill="#FFF7EA" stroke="#3B2555" stroke-width="2"/><circle cx="24" cy="24" r="5" fill="#8B7BE8" stroke="#3B2555" stroke-width="2"/><circle cx="22.4" cy="22.4" r="1.6" fill="#FFF7EA"/></symbol>
+<symbol id="ic-check" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="13" y="11" width="22" height="27" rx="3" fill="#FFF7EA" stroke="#3B2555" stroke-width="2"/><rect x="19" y="8" width="10" height="6" rx="2" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><path d="M17.5 21l2.5 2.5 4-4.5M17.5 29l2.5 2.5 4-4.5" stroke="#0F7A66" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M27 21h5M27 29h5" stroke="#3B2555" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="ic-frame" viewBox="0 0 48 48"><use href="#g-bg"/><rect x="10" y="13" width="28" height="22" rx="3" fill="#FFF7EA" stroke="#3B2555" stroke-width="2"/><circle cx="18" cy="20" r="2.4" fill="#FFD684"/><path d="M12 32l7-8 5 5 4-4 8 7z" fill="#7ED9C3" stroke="#3B2555" stroke-width="1.6"/></symbol>
+<symbol id="ic-mega" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M13 21l12-6v18l-12-6z" fill="#FFD684" stroke="#3B2555" stroke-width="2"/><rect x="9" y="20" width="5" height="8" rx="2" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><path d="M29 18c2.5 2.5 2.5 9 0 12M33 15c4 4 4 14 0 18" stroke="#FF7EA8" stroke-width="2.4" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-bulb" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 11a9 9 0 0 1 5 16.5V31h-10v-3.5A9 9 0 0 1 24 11z" fill="#FFD684" stroke="#3B2555" stroke-width="2"/><rect x="19" y="31" width="10" height="6" rx="2" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><path d="M24 8V5M35 15l2-2M13 15l-2-2" stroke="#FF7EA8" stroke-width="2.2" stroke-linecap="round"/></symbol>
+<symbol id="ic-brain" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M23 12c-5 0-9 3-9 7 0 2 1 3 1 4-1 1-2 2-2 4 0 4 4 6 9 6h1z" fill="#FF9FBD" stroke="#3B2555" stroke-width="2"/><path d="M25 12c5 0 9 3 9 7 0 2-1 3-1 4 1 1 2 2 2 4 0 4-4 6-9 6h-1z" fill="#FFC0D3" stroke="#3B2555" stroke-width="2"/><path d="M24 12v21" stroke="#3B2555" stroke-width="1.6"/></symbol>
+<symbol id="ic-star" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M24 10l4.2 9.4 10.3 1.1-7.7 6.9 2.2 10.1L24 32.2l-9 5.3 2.2-10.1-7.7-6.9 10.3-1.1z" fill="#FFD684" stroke="#3B2555" stroke-width="2" stroke-linejoin="round"/></symbol>
+<symbol id="ic-smile" viewBox="0 0 48 48"><use href="#g-bg"/><circle cx="24" cy="24" r="13" fill="#FFD684" stroke="#3B2555" stroke-width="2"/><circle cx="19" cy="21" r="2" fill="#3B2555"/><circle cx="29" cy="21" r="2" fill="#3B2555"/><path d="M17 27c2 3.5 5 5 7 5s5-1.5 7-5" stroke="#3B2555" stroke-width="2.4" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-lock" viewBox="0 0 48 48"><use href="#g-bg"/><path d="M17 21v-4a7 7 0 0 1 14 0v4" fill="none" stroke="#3B2555" stroke-width="2.6"/><rect x="13" y="21" width="22" height="16" rx="4" fill="#7ED9C3" stroke="#3B2555" stroke-width="2"/><circle cx="24" cy="28" r="2.4" fill="#0F5F50"/><path d="M24 30v4" stroke="#0F5F50" stroke-width="2.4" stroke-linecap="round"/></symbol>
+<symbol id="ic-globe" viewBox="0 0 48 48"><use href="#g-bg"/><circle cx="24" cy="24" r="13" fill="#8AA6D8" stroke="#3B2555" stroke-width="2"/><path d="M11 24h26M24 11c4 4 4 22 0 26M24 11c-4 4-4 22 0 26" fill="none" stroke="#FFF7EA" stroke-width="1.8"/><circle cx="24" cy="11" r="2.6" fill="#FFD684" stroke="#3B2555" stroke-width="1.6"/><circle cx="13" cy="30" r="2.6" fill="#FF7EA8" stroke="#3B2555" stroke-width="1.6"/><circle cx="35" cy="30" r="2.6" fill="#7ED9C3" stroke="#3B2555" stroke-width="1.6"/></symbol>
+
+<!-- ตัวการ์ตูนแม่หมอ -->
+<symbol id="fig-seer" viewBox="0 0 300 210">
+  <ellipse cx="150" cy="196" rx="96" ry="12" fill="rgba(0,0,0,.18)"/>
+  <path d="M78 200c6-46 34-62 72-62s66 16 72 62z" fill="#5B3A8C" stroke="#2A1740" stroke-width="3"/>
+  <path d="M96 176c8-9 20-6 26 2" fill="none" stroke="#2A1740" stroke-width="3" stroke-linecap="round"/>
+  <path d="M204 176c-8-9-20-6-26 2" fill="none" stroke="#2A1740" stroke-width="3" stroke-linecap="round"/>
+  <path d="M100 152c-16 8-26 22-28 40 14 4 26 0 34-8z" fill="#F3C9A8" stroke="#2A1740" stroke-width="3"/>
+  <path d="M200 152c16 8 26 22 28 40-14 4-26 0-34-8z" fill="#F3C9A8" stroke="#2A1740" stroke-width="3"/>
+  <ellipse cx="150" cy="96" rx="46" ry="49" fill="#F7D4B4" stroke="#2A1740" stroke-width="3"/>
+  <path d="M104 92c0-34 20-56 46-56s46 22 46 56c6-8 8-20 4-30-8-22-28-34-50-34s-42 12-50 34c-4 10-2 22 4 30z" fill="#7A4FB6" stroke="#2A1740" stroke-width="3"/>
+  <path d="M112 60c14-14 62-14 76 0" fill="none" stroke="#FFD684" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="150" cy="52" r="7" fill="#FFD684" stroke="#2A1740" stroke-width="2.6"/>
+  <path d="M126 96c5-5 13-5 18 0" fill="none" stroke="#2A1740" stroke-width="4" stroke-linecap="round"/>
+  <path d="M156 96c5-5 13-5 18 0" fill="none" stroke="#2A1740" stroke-width="4" stroke-linecap="round"/>
+  <path d="M140 118c6 5 14 5 20 0" fill="none" stroke="#2A1740" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="122" cy="108" r="6" fill="#FF9FBD" opacity=".65"/>
+  <circle cx="178" cy="108" r="6" fill="#FF9FBD" opacity=".65"/>
+  <circle cx="102" cy="106" r="7" fill="none" stroke="#FFD684" stroke-width="3.6"/>
+  <circle cx="198" cy="106" r="7" fill="none" stroke="#FFD684" stroke-width="3.6"/>
+</symbol>
+
+<!-- ตัวการ์ตูนผลทำนาย 6 แบบ : viewBox 0 0 120 120 -->
+<symbol id="av-data" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#2F5FA8"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#BFEFE4" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F7D4B4" stroke="#22183A" stroke-width="3"/><path d="M34 50c0-16 12-26 26-26s26 10 26 26c0-22-10-32-26-32S34 28 34 50z" fill="#3B2555"/><circle cx="51" cy="56" r="3" fill="#22183A"/><circle cx="69" cy="56" r="3" fill="#22183A"/><path d="M53 68c4 3 10 3 14 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><g stroke="#22183A" stroke-width="2.5" fill="#FFD684"><rect x="76" y="86" width="8" height="14"/><rect x="88" y="78" width="8" height="22"/></g></symbol>
+<symbol id="av-dev" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#4E3A96"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#8B7BE8" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F3C9A8" stroke="#22183A" stroke-width="3"/><path d="M33 52c2-18 13-28 27-28s25 10 27 28c2-10-2-20-9-25-10-7-26-7-36 0-7 5-11 15-9 25z" fill="#4A3020"/><circle cx="51" cy="56" r="3" fill="#22183A"/><circle cx="69" cy="56" r="3" fill="#22183A"/><path d="M52 68c5 4 11 4 16 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="70" y="84" width="30" height="18" rx="3" fill="#FFF7EA" stroke="#22183A" stroke-width="2.6"/><path d="M76 92l4 4-4 4M86 100h8" stroke="#4E3A96" stroke-width="2.6" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="av-ux" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#C9557F"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#FFD684" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F7D4B4" stroke="#22183A" stroke-width="3"/><path d="M32 48c8-6 48-6 56 0 4-10-8-24-28-24S28 38 32 48z" fill="#7ED9C3" stroke="#22183A" stroke-width="3"/><circle cx="51" cy="56" r="3" fill="#22183A"/><circle cx="69" cy="56" r="3" fill="#22183A"/><path d="M53 68c4 3 10 3 14 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M84 96l14-14" stroke="#C98B4B" stroke-width="6" stroke-linecap="round"/><path d="M80 100l6-6 6 6-6 6z" fill="#FF7EA8" stroke="#22183A" stroke-width="2.4"/></symbol>
+<symbol id="av-game" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#1F7F6E"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#FF9FBD" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F3C9A8" stroke="#22183A" stroke-width="3"/><path d="M34 50c0-16 12-26 26-26s26 10 26 26c2-24-12-32-26-32S32 26 34 50z" fill="#22183A"/><path d="M32 48h56v8H32z" fill="#8B7BE8" stroke="#22183A" stroke-width="2.6"/><circle cx="51" cy="62" r="3" fill="#22183A"/><circle cx="69" cy="62" r="3" fill="#22183A"/><path d="M53 72c4 3 10 3 14 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="72" y="88" width="28" height="13" rx="6.5" fill="#FFD684" stroke="#22183A" stroke-width="2.4"/><path d="M79 92v6M76 95h6" stroke="#22183A" stroke-width="2.2" stroke-linecap="round"/><circle cx="93" cy="94.5" r="2.2" fill="#C9557F"/></symbol>
+<symbol id="av-sec" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#22406B"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#7ED9C3" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F7D4B4" stroke="#22183A" stroke-width="3"/><path d="M30 46h60c-2-14-14-22-30-22s-28 8-30 22z" fill="#3B2555" stroke="#22183A" stroke-width="3"/><path d="M26 46h68" stroke="#FFD684" stroke-width="5" stroke-linecap="round"/><circle cx="51" cy="58" r="3" fill="#22183A"/><circle cx="69" cy="58" r="3" fill="#22183A"/><path d="M53 69c4 3 10 3 14 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M84 82l14 5v10c0 8-6 11-14 14-8-3-14-6-14-14V87z" fill="#FFD684" stroke="#22183A" stroke-width="2.6"/><path d="M78 96l4 4 7-8" stroke="#22183A" stroke-width="2.6" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="av-net" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#2E7D8F"/><path d="M28 112c4-22 16-30 32-30s28 8 32 30z" fill="#FFD684" stroke="#22183A" stroke-width="3"/><circle cx="60" cy="56" r="26" fill="#F3C9A8" stroke="#22183A" stroke-width="3"/><path d="M34 52c0-18 12-28 26-28s26 10 26 28c4-22-10-34-26-34S30 30 34 52z" fill="#4A3020"/><circle cx="51" cy="56" r="3" fill="#22183A"/><circle cx="69" cy="56" r="3" fill="#22183A"/><path d="M53 68c4 3 10 3 14 0" stroke="#22183A" stroke-width="3" fill="none" stroke-linecap="round"/><g stroke="#BFEFE4" stroke-width="2.6"><path d="M86 84l-10 10M86 84l10 10"/></g><circle cx="86" cy="82" r="5" fill="#FFF7EA" stroke="#22183A" stroke-width="2.4"/><circle cx="74" cy="98" r="5" fill="#FF9FBD" stroke="#22183A" stroke-width="2.4"/><circle cx="98" cy="98" r="5" fill="#7ED9C3" stroke="#22183A" stroke-width="2.4"/></symbol>
+</svg>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<!-- แถบเครื่องมือ -->
+<div class="tools" role="group" aria-label="ตั้งค่าการแสดงผล">
+  <button class="tool" id="tSize">อักษรใหญ่</button>
+  <button class="tool" id="tTheme">พื้นสว่าง</button>
+  <button class="tool" id="tCam">ปิดกล้อง</button>
+  <button class="tool" id="tRestart">เริ่มใหม่</button>
+</div>
+
+<div class="wrap">
+
+  <!-- หน้าเริ่ม -->
+  <section class="stage" id="s-intro">
+    <p class="eyebrow">หลักสูตรเทคโนโลยีสารสนเทศ · มทร.ล้านนา ลำปาง</p>
+    <h1>ผู้พิทักษ์แห่ง<span>โชคชะตา</span></h1>
+    <div class="seer">
+      <svg class="fig" viewBox="0 0 300 210" role="img" aria-label="ภาพการ์ตูนแม่หมอนั่งอยู่หลังลูกแก้ว"><use href="#fig-seer"/></svg>
+      <div class="orb-holder">
+        <div class="orb">
+          <video id="cam" autoplay muted playsinline aria-hidden="true"></video>
+          <div class="orb-glass"></div>
+        </div>
+      </div>
+    </div>
+    <p class="lead">ตอบคำถาม 6 ข้อ แล้วมาดูว่าคุณเหมาะกับงานสายไอทีแบบไหน</p>
+    <ul class="facts">
+      <li>3 นาที</li>
+      <li>ยกมือหรือแตะจอ</li>
+      <li>ไม่มีคำตอบผิด</li>
+      <li>ไม่เก็บข้อมูลส่วนตัว</li>
+    </ul>
+    <div class="row"><button class="btn" id="go">เริ่มเปิดคำทำนาย</button></div>
+    <p class="small" style="margin-top:14px" id="camMsg">กำลังเปิดกล้อง…</p>
+  </section>
+
+  <!-- คำถาม -->
+  <section class="stage hidden" id="s-quiz">
+    <div class="progress">
+      <p id="qn">ข้อ 1 จาก 6</p>
+      <div class="track" id="track" aria-hidden="true"></div>
+    </div>
+    <h2 class="q" id="qtext">
+      <span class="q-scene" id="qscene"></span>
+      <span class="q-ask" id="qask"></span>
+    </h2>
+    <div class="qdiv" aria-hidden="true"><i></i><span>เลือก 1 ข้อ</span><i></i></div>
+    <div class="choices" id="choices" role="group" aria-labelledby="qtext"></div>
+
+    <div class="campanel">
+      <p class="campanel-head" id="camhead">หรือเลือกด้วยการยกมือหน้ากล้อง</p>
+      <div class="camwrap">
+        <video id="cam2" autoplay muted playsinline aria-hidden="true"></video>
+        <div class="zones" id="zones" aria-hidden="true"></div>
+        <div class="camoff hidden" id="camoff">ยังไม่ได้ใช้กล้อง — แตะเลือกคำตอบด้านบนได้เลย</div>
+      </div>
+      <p class="camnote" id="zhint">ยกมือขึ้นเหนือหมายเลขที่เลือก ค้างไว้ 1.5 วินาที</p>
+      <div class="camctl" id="camctl">
+        <label for="sens">ความไวกล้อง</label>
+        <input id="sens" type="range" min="1" max="5" step="1" value="4">
+        <button class="tool" id="recal" type="button">จำพื้นหลังใหม่</button>
+      </div>
+      <p class="camnote camnote-fine">ยืนนิ่ง ๆ ให้กล้องจำพื้นหลังสักครู่ก่อนยกมือ · กล้องใช้ตรวจจับการเคลื่อนไหวเท่านั้น ไม่บันทึกภาพ · กดปุ่มตัวเลข 1–5 บนคีย์บอร์ดก็ได้</p>
+    </div>
+
+    <div class="row"><button class="btn ghost small" id="back">ย้อนกลับ</button></div>
+  </section>
+
+  <!-- กำลังทำนาย -->
+  <section class="stage hidden" id="s-wait">
+    <svg class="spin" viewBox="0 0 300 210" aria-hidden="true"><use href="#fig-seer"/></svg>
+    <h2 class="q">แม่หมอกำลังอ่านพลังความถนัดของคุณ…</h2>
+    <div class="bar"><i id="barFill"></i></div>
+    <p class="lead" id="waveHint">โบกมือหน้ากล้องเพื่อเปิดคำทำนาย หรือกดปุ่มด้านล่าง</p>
+    <div class="row"><button class="btn" id="reveal">เปิดคำทำนาย</button></div>
+  </section>
+
+  <!-- ผลทำนาย -->
+  <section class="stage hidden" id="s-result">
+    <span class="badge">คำทำนายของคุณ</span>
+    <svg class="avatar" id="rAvatar" viewBox="0 0 120 120" role="img" aria-label="ภาพการ์ตูนของสายอาชีพที่ทำนายได้"><use href="#av-data" id="rAvatarUse"/></svg>
+    <h2 class="title" id="rTitle"></h2>
+    <p class="lead" id="rTagline"></p>
+    <div class="card">
+      <h3>แม่หมอเห็นอะไรในตัวคุณ</h3>
+      <p id="rWho"></p>
+      <h3>ทำไมจึงเหมาะกับสายนี้</h3>
+      <p id="rWhy"></p>
+      <h3>สายอาชีพที่รออยู่</h3>
+      <div class="tags" id="rJobs"></div>
+      <h3>พลังสามอันดับแรกของคุณ</h3>
+      <div class="power" id="rPower"></div>
+    </div>
+    <div class="row">
+      <button class="btn" id="again">เล่นอีกครั้ง</button>
+      <button class="btn ghost small" id="showAll">ดูสายอาชีพทั้ง 6 แบบ</button>
+    </div>
+  </section>
+
+  <!-- สายอาชีพทั้งหมด -->
+  <section class="stage hidden" id="s-all">
+    <h1 style="font-size:30px">สายอาชีพทั้ง 6 แบบ</h1>
+    <div class="rule"><i></i><b></b><i></i></div>
+    <div class="card" id="allList"></div>
+    <div class="row"><button class="btn small" id="closeAll">กลับไปดูคำทำนาย</button></div>
+  </section>
+</div>
+
+<footer><span class="only-lg">ทำงานแบบออฟไลน์ · ไม่เก็บชื่อและข้อมูลส่วนตัว · </span><button id="logBtn">บันทึกผู้เข้าร่วม<span class="only-lg"> (กด L)</span></button></footer>
+
+<!-- แผงบันทึกผู้เข้าร่วม -->
+<div class="panel hidden" id="panel" role="dialog" aria-label="บันทึกผู้เข้าร่วมกิจกรรม">
+  <div class="inner">
+    <p class="eyebrow">สำหรับเจ้าหน้าที่บูธ</p>
+    <h1 style="font-size:30px">บันทึกผู้เข้าร่วมกิจกรรม</h1>
+    <div class="stat">
+      <div><b id="cToday">0</b><span>วันนี้</span></div>
+      <div><b id="cAll">0</b><span>ทั้งหมด</span></div>
+      <div><b id="cDays">0</b><span>จำนวนวันที่จัด</span></div>
+      <div><b id="cTop" style="font-size:20px">—</b><span>ผลที่ออกบ่อยที่สุด</span></div>
+    </div>
+    <div class="row" style="justify-content:flex-start">
+      <button class="btn small" id="csv">ดาวน์โหลดไฟล์ CSV</button>
+      <button class="btn ghost small" id="clear">ล้างข้อมูล</button>
+      <button class="btn ghost small" id="closePanel">ปิดหน้านี้</button>
+    </div>
+    <div class="tablewrap">
+      <table><thead><tr><th>วันที่</th><th>เวลา</th><th>รอบ (Session)</th><th>ผลการทำนาย</th><th>ใช้เวลา</th></tr></thead>
+      <tbody id="logRows"></tbody></table>
+    </div>
+    <p class="small" style="margin-top:16px">บันทึกเฉพาะวันที่ เวลา หมายเลขรอบที่ระบบสร้างอัตโนมัติ ผลการทำนาย และเวลาที่ใช้เล่น
+      ไม่มีการเก็บชื่อ นามสกุล โรงเรียน หรือเบอร์โทร ภาพจากกล้องใช้แสดงในลูกแก้วและตรวจจับการโบกมือเท่านั้น ไม่ถูกบันทึกหรือส่งออกจากเครื่อง</p>
+  </div>
+</div>
+
+<canvas id="motion" width="96" height="54" class="hidden"></canvas>
+
+<script>
+/* ---------- สายอาชีพ 6 กลุ่ม ---------- */
+const PATHS = {
+  data:{icon:"av-data",name:"นักอ่านอนาคตจากข้อมูล",
+    tagline:"คุณมองตัวเลขแล้วเห็นเรื่องราวที่คนอื่นมองไม่เห็น",
+    who:"คุณเป็นคนช่างสังเกต ชอบหาความจริงก่อนตัดสินใจ เวลาเจอปัญหาคุณจะถามหาสาเหตุก่อนลงมือทำ และรู้สึกสนุกเวลาจับรูปแบบซ้ำ ๆ ในสิ่งที่ดูยุ่งเหยิงได้",
+    why:"งานสาย AI และข้อมูลต้องการคนที่ใจเย็นกับรายละเอียด ตั้งคำถามเก่ง และเชื่อหลักฐานมากกว่าความรู้สึก ซึ่งเป็นนิสัยที่คุณมีอยู่แล้ว",
+    jobs:["Data Analyst","AI / Machine Learning","Business Intelligence","นักวิจัยข้อมูล"]},
+  dev:{icon:"av-dev",name:"นักสร้างเครื่องจักรความคิด",
+    tagline:"คิดอะไรได้ คุณก็อยากทำให้มันใช้งานได้จริง",
+    who:"คุณเป็นคนลงมือทำ ชอบแกะดูว่าอะไรทำงานอย่างไร และไม่กลัวลองผิดลองถูกจนกว่าจะสำเร็จ ความสุขของคุณคือเห็นสิ่งที่ตัวเองสร้างทำงานได้",
+    why:"การเขียนโปรแกรมคือการแก้ปัญหาซ้ำ ๆ จนกว่าจะได้ผล คนที่ไปได้ไกลไม่ใช่คนเก่งที่สุด แต่เป็นคนที่ยังลองต่อ ซึ่งตรงกับคุณ",
+    jobs:["Software Developer","Web Developer","Mobile Developer","System Analyst"]},
+  ux:{icon:"av-ux",name:"นักสร้างสรรค์ดิจิทัล",
+    tagline:"คุณใส่ใจว่าคนอื่นจะรู้สึกอย่างไรกับสิ่งที่คุณทำ",
+    who:"คุณมองเห็นความสวยงามและความรู้สึกของคน เวลามีใครใช้ของแล้วสับสน คุณจะคิดว่ามันน่าจะทำให้ง่ายกว่านี้ได้ และคุณชอบทำให้สิ่งของดูดีขึ้น",
+    why:"งาน UX/UI คือการเข้าใจคนก่อนออกแบบหน้าจอ ทักษะสำคัญคือความเข้าใจผู้อื่นและสายตาที่ละเอียด ไม่ใช่การเขียนโค้ดเก่งที่สุด",
+    jobs:["UX/UI Designer","Digital Media","Content Creator","Product Designer"]},
+  game:{icon:"av-game",name:"ผู้สร้างโลกใบใหม่",
+    tagline:"ในหัวของคุณมีโลกที่ยังไม่มีใครได้เข้าไปเล่น",
+    who:"คุณชอบเรื่องเล่า ตัวละคร และความสนุก เวลาเล่นเกมคุณไม่ได้แค่เล่น แต่คิดต่อว่าถ้าเป็นเกมของเราจะทำให้ต่างออกไปอย่างไร",
+    why:"การทำเกมต้องรวมศิลปะ ตรรกะ และความเข้าใจคนเล่นเข้าด้วยกัน คนที่ชอบทั้งจินตนาการและการลงมือทำจะเติบโตในสายนี้ได้ดี",
+    jobs:["Game Developer","Game Designer","3D / Animation","AR/VR Developer"]},
+  sec:{icon:"av-sec",name:"ผู้พิทักษ์เงามืด",
+    tagline:"คุณเห็นช่องโหว่ที่คนอื่นเดินผ่านไปเฉย ๆ",
+    who:"คุณเป็นคนระวังตัว ไม่เชื่ออะไรง่าย ๆ และชอบคิดว่าถ้ามีคนตั้งใจโกงระบบนี้ เขาจะทำจากทางไหน คุณรู้สึกดีเวลาได้ปกป้องคนอื่น",
+    why:"งานความปลอดภัยไซเบอร์ต้องการคนที่คิดต่างจากคนทั่วไป มองหาจุดอ่อนก่อนคนร้ายจะเจอ และมีวินัยกับกฎเกณฑ์",
+    jobs:["Cybersecurity","Penetration Tester","IT Auditor","Security Operations"]},
+  net:{icon:"av-net",name:"ผู้เชื่อมสายใยจักรวาล",
+    tagline:"ถ้าไม่มีคุณ ทุกอย่างจะหยุดเชื่อมต่อกัน",
+    who:"คุณเป็นคนที่คนอื่นพึ่งได้ ชอบให้ทุกอย่างเรียบร้อยเป็นระบบ และพอใจเวลาทุกส่วนทำงานประสานกันได้ราบรื่น",
+    why:"ระบบเครือข่ายและคลาวด์คือกระดูกสันหลังของทุกองค์กร ต้องการคนที่ละเอียด รับผิดชอบ และแก้ปัญหาเฉพาะหน้าได้",
+    jobs:["Network Engineer","Cloud / DevOps","System Administrator","IT Support ระดับสูง"]}
+};
+
+/* ---------- คำถาม 6 ข้อ ใช้ภาพการ์ตูนประกอบทุกตัวเลือก ---------- */
+const QUESTIONS = [
+  {scene:"วันหยุดที่ว่างทั้งวัน",q:"คุณอยากทำอะไรที่สุด",a:[
+    {ic:"ic-box",t:"จัดของ จัดตาราง ให้ทุกอย่างเข้าที่",s:{data:2,net:2,sec:1}},
+    {ic:"ic-palette",t:"วาดรูป ตัดต่อคลิป หรือแต่งห้องใหม่",s:{ux:3,game:1}},
+    {ic:"ic-gamepad",t:"เล่นเกม แล้วคิดว่าถ้าเป็นเกมของเราจะทำต่างออกไป",s:{game:3,dev:1}},
+    {ic:"ic-wrench",t:"แกะของเล่นหรือเครื่องใช้ ดูข้างในว่าทำงานอย่างไร",s:{dev:2,sec:2,net:1}}]},
+  {scene:"เพื่อนมาเล่าปัญหาให้ฟัง",q:"คุณมักทำอะไรก่อน",a:[
+    {ic:"ic-search",t:"ถามรายละเอียดเยอะ ๆ แล้วสรุปให้ฟังว่าปัญหาจริงคืออะไร",s:{data:3,sec:1}},
+    {ic:"ic-hammer",t:"หาวิธีแก้ให้เลย ลงมือช่วยทำด้วย",s:{dev:3,net:1}},
+    {ic:"ic-heart",t:"ฟังความรู้สึกเขาก่อน ให้เขารู้สึกดีขึ้น",s:{ux:3}},
+    {ic:"ic-shield",t:"เตือนว่าอย่าเชื่อใครง่าย ๆ เดี๋ยวโดนหลอกอีก",s:{sec:3}}]},
+  {scene:"ถ้าเสกอะไรก็ได้หนึ่งอย่าง",q:"คุณจะเสกอะไร",a:[
+    {ic:"ic-robot",t:"หุ่นยนต์ที่ทายใจคนได้แม่นมาก",s:{data:3,dev:1}},
+    {ic:"ic-phone",t:"แอปที่คนทั้งโรงเรียนต้องใช้",s:{dev:3,ux:1}},
+    {ic:"ic-planet",t:"โลกอีกใบที่มีเรื่องราวของตัวเอง",s:{game:3}},
+    {ic:"ic-door",t:"ประตูวิเศษที่เชื่อมทุกที่เข้าหากัน",s:{net:3}},
+    {ic:"ic-wall",t:"กำแพงที่ไม่มีใครเจาะเข้ามาได้",s:{sec:3}}]},
+  {scene:"เจอปัญหาที่ยังไม่รู้วิธีแก้เลย",q:"คุณจะทำอย่างไร",a:[
+    {ic:"ic-flask",t:"ลองผิดลองถูกเองไปเรื่อย ๆ จนกว่าจะได้",s:{dev:3,game:1}},
+    {ic:"ic-chart",t:"หาข้อมูลก่อน ดูว่าคนอื่นเจอแบบนี้แล้วเป็นอย่างไร",s:{data:3}},
+    {ic:"ic-chat",t:"ชวนคนอื่นมาช่วยคิด แบ่งงานกันทำ",s:{net:2,ux:2}},
+    {ic:"ic-eye",t:"มองหาช่องที่คนอื่นมองข้ามไป",s:{sec:3}}]},
+  {scene:"เวลาทำงานกลุ่ม",q:"คุณมักได้บทบาทไหน",a:[
+    {ic:"ic-check",t:"คนตรวจความถูกต้อง คุมตัวเลข",s:{data:3,sec:1}},
+    {ic:"ic-wrench",t:"คนลงมือทำชิ้นงานจริง",s:{dev:3,game:1}},
+    {ic:"ic-frame",t:"คนทำสไลด์และออกแบบให้สวย",s:{ux:3}},
+    {ic:"ic-mega",t:"คนประสานงาน คุยกับทุกฝ่าย จัดคิวงาน",s:{net:3}},
+    {ic:"ic-bulb",t:"คนคิดไอเดียสนุก ๆ ให้ทีม",s:{game:3,ux:1}}]},
+  {scene:"มีคนเอ่ยปากชมคุณ",q:"คำชมแบบไหนทำให้คุณยิ้มที่สุด",a:[
+    {ic:"ic-brain",t:"คิดได้อย่างไรเนี่ย ฉลาดมาก",s:{data:2,dev:2}},
+    {ic:"ic-star",t:"สวยจัง น่าใช้จัง",s:{ux:3}},
+    {ic:"ic-smile",t:"สนุกมาก เล่นเพลินเลย",s:{game:3}},
+    {ic:"ic-lock",t:"อยู่กับเธอแล้วรู้สึกปลอดภัย",s:{sec:3}},
+    {ic:"ic-globe",t:"ขาดเธอไม่ได้เลย ไม่มีเธอทุกอย่างพัง",s:{net:3}}]}
+];
+
+/* ---------- สถานะ ---------- */
+const KEY="maemorvr_log_v2";
+const STAGES=["s-intro","s-quiz","s-wait","s-result","s-all"];
+let qi=0, scores={}, answers=[], startedAt=0, waiting=false, barTimer=null;
+const $=id=>document.getElementById(id);
+function show(id){
+  STAGES.forEach(s=>$(s).classList.toggle("hidden",s!==id));
+  if(typeof resetVision==="function")resetVision();  // สลับกล้องต้นทาง จึงต้องจำพื้นหลังใหม่
+  window.scrollTo(0,0);
+  const f=$(id).querySelector("button");if(f)f.focus({preventScroll:true});
+}
+function resetScores(){scores={};Object.keys(PATHS).forEach(k=>scores[k]=0);answers=[];}
+
+/* ---------- คำถาม ---------- */
+function renderQ(){
+  $("qn").textContent="ข้อ "+(qi+1)+" จาก "+QUESTIONS.length;
+  $("track").innerHTML=QUESTIONS.map((_,i)=>`<b class="${i<=qi?'on':''}"></b>`).join("");
+  $("qscene").textContent=QUESTIONS[qi].scene;
+  $("qask").textContent=QUESTIONS[qi].q;
+  const box=$("choices");box.innerHTML="";
+  QUESTIONS[qi].a.forEach((opt,i)=>{
+    const b=document.createElement("button");
+    b.className="choice";b.type="button";
+    b.innerHTML=`<span class="num" aria-hidden="true">${i+1}</span>`+
+      `<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#${opt.ic}"/></svg>`+
+      `<span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    box.appendChild(b);
+  });
+  $("back").classList.toggle("hidden",qi===0);
+  // สร้างโซนกล้องให้ตรงกับจำนวนตัวเลือกของข้อนี้
+  const n=QUESTIONS[qi].a.length;
+  $("zones").innerHTML=Array.from({length:n},(_,i)=>
+    `<div class="zone" data-i="${i}"><span class="zfill"></span><span class="znum">${i+1}</span></div>`).join("");
+  dwell=new Array(n).fill(0);
+  updateCamOverlay();
+}
+function updateCamOverlay(){
+  const live=camOn&&camReady;
+  $("camoff").classList.toggle("hidden",live);
+  $("cam2").style.visibility=live?"visible":"hidden";
+  // ไม่ได้ใช้กล้อง ก็ยุบกล่องกล้องทิ้ง เหลือแต่ตัวเลือกให้แตะ จะได้ไม่รกหน้าจอเล็ก
+  document.querySelector(".campanel").classList.toggle("off",!live);
+  $("camhead").textContent=live?"หรือเลือกด้วยการยกมือหน้ากล้อง"
+                               :"กล้องปิดอยู่ — แตะเลือกคำตอบด้านบนได้เลย";
+}
+function pick(i){
+  if($("s-quiz").classList.contains("hidden"))return;
+  answers[qi]=i;
+  const s=QUESTIONS[qi].a[i].s;for(const k in s)scores[k]+=s[k];
+  qi++;
+  if(qi<QUESTIONS.length){renderQ();$("choices").querySelector("button").focus({preventScroll:true});}
+  else divine();
+}
+$("back").onclick=()=>{if(qi===0)return;qi--;const s=QUESTIONS[qi].a[answers[qi]].s;for(const k in s)scores[k]-=s[k];renderQ();};
+addEventListener("keydown",e=>{
+  if(!$("s-quiz").classList.contains("hidden")&&/^[1-5]$/.test(e.key)){
+    const n=+e.key-1;if(n<QUESTIONS[qi].a.length)pick(n);
+  }
+  if(e.key==="l"||e.key==="L")openPanel();
+  if(e.key==="Escape")$("panel").classList.add("hidden");
+});
+
+/* ---------- ช่วงทำนาย ---------- */
+function divine(){
+  show("s-wait");waiting=true;
+  $("waveHint").textContent=camOn&&camReady?"โบกมือหน้ากล้องเพื่อเปิดคำทำนาย หรือกดปุ่มด้านล่าง":"กดปุ่มด้านล่างเพื่อเปิดคำทำนาย";
+  let p=0;clearInterval(barTimer);$("barFill").style.width="0%";
+  barTimer=setInterval(()=>{p=Math.min(100,p+5);$("barFill").style.width=p+"%";
+    if(p>=100){clearInterval(barTimer);if(waiting)finish();}},110);
+}
+$("reveal").onclick=()=>{if(waiting)finish();};
+
+function finish(){
+  waiting=false;clearInterval(barTimer);
+  const order=Object.keys(PATHS).sort((a,b)=>scores[b]-scores[a]);
+  const p=PATHS[order[0]], max=scores[order[0]]||1;
+  $("rAvatarUse").setAttribute("href","#"+p.icon);
+  $("rTitle").textContent=p.name;
+  $("rTagline").textContent=p.tagline;
+  $("rWho").textContent=p.who;
+  $("rWhy").textContent=p.why;
+  $("rJobs").innerHTML=p.jobs.map(j=>`<span class="tag">${j}</span>`).join("");
+  $("rPower").innerHTML=order.slice(0,3).map(k=>
+    `<div><span>${PATHS[k].name}</span><i style="--w:${Math.round(scores[k]/max*100)}%"></i></div>`).join("");
+  show("s-result");
+  saveLog(p.name);
+}
+
+/* ---------- บันทึกแบบไม่ระบุตัวตน ---------- */
+const two=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate());};
+const readLog=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
+function saveLog(result){
+  const log=readLog(),d=new Date(),date=today();
+  const n=log.filter(r=>r.date===date).length+1;
+  log.push({sid:"S-"+date.replace(/-/g,"")+"-"+two(n),date,
+    time:two(d.getHours())+":"+two(d.getMinutes())+":"+two(d.getSeconds()),
+    result,sec:Math.round((Date.now()-startedAt)/1000)});
+  try{localStorage.setItem(KEY,JSON.stringify(log))}catch(e){}
+}
+function openPanel(){
+  const log=readLog(),date=today();
+  $("cToday").textContent=log.filter(r=>r.date===date).length;
+  $("cAll").textContent=log.length;
+  $("cDays").textContent=new Set(log.map(r=>r.date)).size;
+  const c={};log.forEach(r=>c[r.result]=(c[r.result]||0)+1);
+  const top=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];
+  $("cTop").textContent=top||"—";
+  $("logRows").innerHTML=log.slice().reverse().map(r=>
+    `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.sid}</td><td>${r.result}</td><td>${r.sec} วินาที</td></tr>`).join("")
+    || `<tr><td colspan="5">ยังไม่มีผู้เล่นในเครื่องนี้ ให้เพื่อนลองเล่นดูก่อน</td></tr>`;
+  $("panel").classList.remove("hidden");
+  $("closePanel").focus({preventScroll:true});
+}
+$("logBtn").onclick=openPanel;
+$("closePanel").onclick=()=>$("panel").classList.add("hidden");
+$("csv").onclick=()=>{
+  const rows=[["session_id","date","time","result","duration_sec"],
+    ...readLog().map(r=>[r.sid,r.date,r.time,r.result,r.sec])];
+  const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="guardian-of-fate-log-"+today()+".csv";a.click();
+};
+$("clear").onclick=()=>{if(confirm("ล้างบันทึกผู้เข้าร่วมทั้งหมดในเครื่องนี้?")){localStorage.removeItem(KEY);openPanel();}};
+
+/* ---------- ปุ่มหลัก ---------- */
+function start(){resetScores();qi=0;startedAt=Date.now();show("s-quiz");renderQ();
+  $("choices").querySelector("button").focus({preventScroll:true});}
+$("go").onclick=start;
+$("again").onclick=()=>show("s-intro");
+$("tRestart").onclick=()=>{waiting=false;clearInterval(barTimer);show("s-intro");};
+$("showAll").onclick=()=>{
+  $("allList").innerHTML=Object.values(PATHS).map(p=>
+    `<div class="all-item"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#${p.icon}"/></svg>
+     <div><b>${p.name}</b><span class="small">${p.jobs.join(" · ")}</span></div></div>`).join("");
+  show("s-all");
+};
+$("closeAll").onclick=()=>show("s-result");
+
+/* ---------- ปุ่มช่วยการเข้าถึง ---------- */
+$("tSize").onclick=e=>{
+  const big=document.body.dataset.size==="lg";
+  document.body.dataset.size=big?"normal":"lg";
+  e.target.textContent=big?"อักษรใหญ่":"อักษรปกติ";
+};
+$("tTheme").onclick=e=>{
+  const light=document.body.dataset.theme==="light";
+  document.body.dataset.theme=light?"dark":"light";
+  e.target.textContent=light?"พื้นสว่าง":"พื้นเข้ม";
+  document.querySelector('meta[name=theme-color]').content=light?"#210E3A":"#FFF6E4";
+};
+
+/* ---------- กล้องในลูกแก้ว + ตรวจจับการโบกมือ ---------- */
+const W=96,H=54;                       // ขนาดภาพที่ใช้วิเคราะห์ (สัดส่วนใกล้แถบกล้องที่ผู้เล่นเห็น)
+const HOLD_MS=1500;                    // ยกมือค้างกี่มิลลิวินาทีจึงนับว่าเลือก
+const LOCK_MS=1400;                    // หลังเลือกแล้ว หยุดรับคำสั่งกี่มิลลิวินาที (รอให้ลดมือลง)
+const A_BG=0.020;                      // ความเร็วปรับพื้นหลังของจุดที่ว่าง (ตามแสงที่เปลี่ยน) ต่อ 1 เฟรม
+const A_FG=0.0016;                     // จุดที่เห็นเป็นวัตถุ ปรับช้ากว่ามาก เพื่อให้ "มือที่ยกค้าง" ไม่จมหายไป
+const AGE_MS=2500;                     // ของที่นิ่งอยู่กับที่เกิน 2.5 วินาที ให้ถือเป็นพื้นหลัง (เช่น ตัวคนที่ยืนรอ)
+// "มีคนเดินเข้าออก" ต้องวัดจากการ "ขยับ" ระหว่างเฟรม ไม่ใช่จากขนาดพื้นที่ที่ต่างจากพื้นหลัง
+// เพราะคนที่มายืนนิ่ง ๆ หน้ากล้องก็กินพื้นที่มากอยู่แล้ว แต่ไม่ได้แปลว่าภาพกำลังวุ่นวาย
+const MOVE_CAP=10;                     // ค่าความขยับเฉลี่ยต่อจุด ถ้าเกินนี้ถือว่าภาพกำลังเปลี่ยนทั้งจอ
+const FLOOD=0.60;                      // ถ้าต่างจากพื้นหลังเกินนี้ แปลว่าแสงเปลี่ยนยกจอ ต้องจำใหม่
+const SETTLE_MS=500;                   // หลังภาพนิ่งแล้ว รออีกกี่มิลลิวินาทีจึงเริ่มตรวจใหม่
+const WARM_MS=600;                     // จำพื้นหลังนานเท่าไรจึงเริ่มเชื่อผลตรวจ
+const RELEARN_MS=700;                  // ภาพวุ่นวายนานเกินนี้ พอสงบแล้วให้จำพื้นหลังใหม่ทั้งหมด
+let SENS=4;                            // ระดับความไว 1–5 ปรับได้จากแถบใต้กล้อง
+let camReady=false, camOn=true, stream=null, prev=null, bg=null, age=null;
+let hits=0, dwell=[], lockUntil=0, warmup=0, settle=0, busy=false, busyMs=0;
+const video=$("cam"), video2=$("cam2"), mctx=$("motion").getContext("2d",{willReadFrequently:true});
+
+// เลือกวิดีโอที่กำลังแสดงผลอยู่จริง — วิดีโอที่ถูกซ่อน (display:none) จะไม่ส่งภาพใหม่ให้วิเคราะห์
+function activeVideo(){
+  return $("s-quiz").classList.contains("hidden") ? video : video2;
+}
+
+// หาขอบเขตภาพที่ "ผู้เล่นมองเห็นจริง" บนจอ — วิดีโอถูกแสดงแบบ object-fit:cover จึงถูกครอบไว้
+// ถ้าไม่ครอบให้ตรงกัน มือที่บังเต็มช่องบนจอจะถูกคิดเป็นสัดส่วนเล็กนิดเดียวจนตรวจไม่เจอ
+function sourceRect(v){
+  const vw=v.videoWidth, vh=v.videoHeight;
+  const cw=v.clientWidth, ch=v.clientHeight;
+  if(!vw||!vh||!cw||!ch)return{sx:0,sy:0,sw:vw||1,sh:vh||1};
+  const sc=Math.max(cw/vw,ch/vh);
+  const sw=Math.min(vw,cw/sc), sh=Math.min(vh,ch/sc);
+  return{sx:(vw-sw)/2,sy:(vh-sh)/2,sw,sh};
+}
+function resetVision(){prev=null;bg=null;age=null;warmup=0;settle=0;dwell=dwell.map(()=>0);}
+addEventListener("resize",resetVision);   // กรอบภาพที่เห็นเปลี่ยนไป ต้องจำพื้นหลังใหม่
+
+async function openCam(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480}},audio:false});
+    video.srcObject=stream;video2.srcObject=stream;
+    camReady=true;camOn=true;video.style.visibility="visible";resetVision();
+    $("camMsg").textContent="กล้องพร้อมแล้ว โบกมือเพื่อเริ่มได้เลย";
+    $("tCam").textContent="ปิดกล้อง";
+  }catch(e){
+    camReady=false;$("tCam").textContent="เปิดกล้อง";
+    $("camMsg").textContent="ยังไม่ได้ใช้กล้อง — กดปุ่มเล่นได้ตามปกติ";
+  }
+  updateCamOverlay();
+}
+function closeCam(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=null;camReady=false;camOn=false;resetVision();
+  video.style.visibility="hidden";
+  $("camMsg").textContent="ปิดกล้องอยู่ — กดปุ่มเล่นได้ตามปกติ";
+  $("tCam").textContent="เปิดกล้อง";
+  updateCamOverlay();
+}
+$("tCam").onclick=()=>{camOn&&stream?closeCam():openCam();};
+$("sens").oninput=e=>{SENS=+e.target.value;resetVision();};
+$("recal").onclick=()=>{resetVision();$("zhint").textContent="กำลังจำพื้นหลังใหม่ ยืนนิ่ง ๆ สักครู่…";};
+openCam();
+
+function paintZones(best,on){
+  const cells=$("zones").children;
+  for(let i=0;i<cells.length;i++){
+    const pct=Math.min(100,Math.round(dwell[i]/HOLD_MS*100));
+    cells[i].querySelector(".zfill").style.height=pct+"%";
+    cells[i].classList.toggle("hot",i===best&&on);
+    const c=$("choices").children[i];
+    if(c)c.classList.toggle("hot",i===best&&pct>30);
+  }
+}
+
+let lastT=0;
+(function loopMotion(t){
+  const now=t||performance.now();
+  const dt=lastT?Math.min(100,now-lastT):16;  // นับเวลาจริง ไม่ผูกกับจำนวนเฟรมของเครื่อง
+  lastT=now;
+  const v=activeVideo();
+  if(camOn&&camReady&&v.videoWidth&&v.readyState>=2){
+    const r=sourceRect(v);
+    mctx.drawImage(v,r.sx,r.sy,r.sw,r.sh,0,0,W,H);
+    const d=mctx.getImageData(0,0,W,H).data;
+    const cur=new Float32Array(W*H);
+    for(let i=0,p=0;i<cur.length;i++,p+=4)cur[i]=(d[p]+d[p+1]+d[p+2])/3;
+
+    // ยังไม่มีภาพพื้นหลัง — ถ้าเพิ่งเลือกไป ให้รอจนพ้นช่วงล็อกก่อน
+    // มิฉะนั้นมือที่ยังยกค้างอยู่จะถูกจำเป็นพื้นหลัง แล้วข้อถัดไปจะตรวจไม่เจอ
+    if(!bg){
+      if(Date.now()<lockUntil){prev=cur;requestAnimationFrame(loopMotion);return;}
+      bg=cur.slice();age=new Float32Array(cur.length);prev=cur;warmup=0;
+      requestAnimationFrame(loopMotion);return;
+    }
+    warmup+=dt;
+
+    const onQuiz=!$("s-quiz").classList.contains("hidden");
+    const n=onQuiz?QUESTIONS[qi].a.length:1;
+    const TH=[0,32,25,19,14,10][SENS];        // ต่างจากพื้นหลังเท่าไรจึงถือว่ามีของมาบัง
+    const NEED=[0,.15,.115,.085,.062,.046][SENS]; // ต้องบังพื้นที่ในช่องกี่ส่วนจึงนับว่าเลือก
+    const fgMask=new Uint8Array(cur.length);
+    let all=0, move=0;
+
+    // รอบที่ 1 — หาจุดที่ต่างจากพื้นหลัง และวัดว่าภาพขยับมากแค่ไหนเทียบกับเฟรมก่อน
+    for(let i=0;i<cur.length;i++){
+      if(Math.abs(cur[i]-bg[i])>TH){fgMask[i]=1;all++;}
+      move+=Math.abs(cur[i]-prev[i]);
+    }
+    move/=cur.length;
+
+    // รอบที่ 2 — กัดขอบทิ้ง: จุดที่จะนับต้องมีเพื่อนบ้านเป็นวัตถุอย่างน้อย 5 ใน 8
+    // ขอบเงาบาง ๆ ที่เกิดตอนคนขยับตัวหรือเอียงหน้าจะหายไป เหลือแต่ก้อนใหญ่จริง ๆ อย่างฝ่ามือ
+    const solid=new Uint8Array(cur.length);
+    for(let y=1;y<H-1;y++){
+      for(let x=1;x<W-1;x++){
+        const i=y*W+x;
+        if(!fgMask[i])continue;
+        const c=fgMask[i-W-1]+fgMask[i-W]+fgMask[i-W+1]
+               +fgMask[i-1]              +fgMask[i+1]
+               +fgMask[i+W-1]+fgMask[i+W]+fgMask[i+W+1];
+        if(c>=5)solid[i]=1;
+      }
+    }
+
+    // รอบที่ 3 — รวมคะแนนรายช่อง โดยให้แถวบนมีน้ำหนักมากกว่า
+    // มือที่ "ยกขึ้น" จะอยู่สูงกว่าหัวและลำตัวเสมอ จึงชนะใบหน้าที่อยู่กลางภาพ
+    const fg=new Array(n).fill(0), tot=new Array(n).fill(0);
+    for(let y=0;y<H;y++){
+      const wy=1+0.6*(1-y/(H-1));
+      for(let x=0;x<W;x++){
+        // ภาพที่ผู้เล่นเห็นถูกกลับซ้าย-ขวา จึงกลับคอลัมน์ให้ตรงกับที่เห็นบนจอ
+        const z=Math.min(n-1,Math.floor((W-1-x)/(W/n)));
+        if(solid[y*W+x])fg[z]+=wy;
+        tot[z]+=wy;
+      }
+    }
+
+    busy=move>MOVE_CAP||all/cur.length>FLOOD;  // มีคนเดินเข้าออก หรือแสงเปลี่ยนยกจอ
+    settle=busy?SETTLE_MS:Math.max(0,settle-dt);
+    busyMs=busy?busyMs+dt:busyMs;
+    // ภาพเพิ่งวุ่นวายมานาน (มีคนเดินเข้ามายืน) พอสงบแล้วให้จำพื้นหลังใหม่
+    // ตัวและใบหน้าของคนที่ยืนอยู่จะกลายเป็นพื้นหลัง เหลือแต่ "มือที่ยกขึ้นทีหลัง" เป็นของใหม่
+    // กันพลาด: ถ้ากำลังนับมือที่ยกค้างอยู่ ห้ามจำใหม่ ไม่งั้นมือจะกลายเป็นพื้นหลังเสียเอง
+    const holding=dwell.length?Math.max(...dwell)>200:false;
+    if(!busy&&settle===0&&busyMs>RELEARN_MS&&!holding){
+      busyMs=0;resetVision();
+      $("zhint").textContent="กำลังจำพื้นหลังใหม่ ยืนนิ่ง ๆ สักครู่…";
+      requestAnimationFrame(loopMotion);return;
+    }
+    if(!busy&&settle===0)busyMs=0;
+
+    const ratio=fg.map((f,i)=>f/tot[i]);
+    let best=0;for(let i=1;i<n;i++)if(ratio[i]>ratio[best])best=i;
+    const second=n>1?Math.max(...ratio.filter((_,i)=>i!==best)):0;
+    const ready=warmup>WARM_MS&&!busy&&settle===0;
+
+    if(onQuiz){
+      const strong=ready&&ratio[best]>NEED&&ratio[best]>second*1.25;
+      if(strong&&Date.now()>lockUntil){
+        dwell[best]=Math.min(HOLD_MS,dwell[best]+dt);
+        for(let i=0;i<n;i++)if(i!==best)dwell[i]=Math.max(0,dwell[i]-dt*2);
+      }else{
+        // ลดช้ากว่าตอนสะสม เพื่อให้มือสั่นหรือหลุดเฟรมชั่วครู่ไม่ทำให้เริ่มนับใหม่
+        for(let i=0;i<n;i++)dwell[i]=Math.max(0,dwell[i]-dt*0.6);
+      }
+      paintZones(strong?best:-1,strong);
+      const left=Math.max(0,(HOLD_MS-dwell[best])/1000).toFixed(1);
+      $("zhint").textContent = busy ? "มีการเคลื่อนไหวมาก รอให้ภาพนิ่งก่อน…"
+        : !ready ? "กำลังจำพื้นหลัง ยืนนิ่ง ๆ สักครู่…"
+        : strong ? "เห็นมือที่ช่อง "+(best+1)+" แล้ว ค้างไว้อีก "+left+" วินาที"
+        : "ยกมือขึ้นเหนือหมายเลขที่เลือก ค้างไว้ 1.5 วินาที";
+      if(dwell[best]>=HOLD_MS&&Date.now()>lockUntil){
+        lockUntil=Date.now()+LOCK_MS;dwell=dwell.map(()=>0);paintZones(-1,false);
+        pick(best);
+        resetVision();                        // ขึ้นข้อใหม่ ให้จำพื้นหลังใหม่ทุกครั้ง
+        requestAnimationFrame(loopMotion);return;
+      }
+    }else{
+      // นอกหน้าคำถาม ใช้การโบกมือทั้งจอเป็นตัวสั่งงาน (สะสมเป็นมิลลิวินาที)
+      if(move>MOVE_CAP||(ready&&ratio[0]>.12))hits+=dt;else hits=Math.max(0,hits-dt);
+      if(hits>250&&Date.now()>lockUntil){
+        hits=0;lockUntil=Date.now()+LOCK_MS;
+        if(waiting)finish();
+        else if(!$("s-intro").classList.contains("hidden"))start();
+      }
+    }
+
+    // ปรับภาพพื้นหลัง: จุดว่างปรับเร็วตามแสง จุดที่เห็นเป็นวัตถุปรับช้า
+    // ส่วนของที่อยู่นิ่งเกิน 2.5 วินาที (เช่น ตัวคนที่ยืนรอ) ให้กลืนเป็นพื้นหลัง เหลือแต่มือที่เพิ่งยกขึ้น
+    const k=dt/16.7;                          // ปรับความเร็วตามเวลาจริง ไม่ผูกกับจำนวนเฟรม
+    const rFg=Math.min(1,A_FG*k), rBg=Math.min(1,A_BG*k);
+    for(let i=0;i<cur.length;i++){
+      if(fgMask[i]&&!busy)age[i]+=dt;else age[i]=0;
+      bg[i]+=(cur[i]-bg[i])*((fgMask[i]&&!busy&&age[i]<AGE_MS)?rFg:rBg);
+    }
+    prev=cur;
+  }
+  requestAnimationFrame(loopMotion);
+})();
+
+/* ---------- ดาวเป็นฉากหลัง ---------- */
+const cv=$("stars"),cx=cv.getContext("2d");let dots=[];
+function sizeStars(){cv.width=innerWidth;cv.height=innerHeight;
+  dots=Array.from({length:Math.min(90,Math.round(innerWidth/16))},()=>({
+    x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.4+.3,
+    s:Math.random()*.22+.04,o:Math.random()}));}
+sizeStars();addEventListener("resize",sizeStars);
+(function twinkle(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  dots.forEach(d=>{d.y-=d.s;if(d.y<0)d.y=cv.height;d.o=Math.max(.15,Math.min(1,d.o+(Math.random()-.5)*.08));
+    cx.fillStyle="rgba(255,214,132,"+d.o*.7+")";cx.beginPath();cx.arc(d.x,d.y,d.r,0,7);cx.fill();});
+  requestAnimationFrame(twinkle);
+})();
+</script>
+</body>
+</html>

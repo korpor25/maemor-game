@@ -1,0 +1,628 @@
+/* ============================================================
+   ผังดวงอาชีพ — ระบบดีไซน์
+   แนวคิด: ผังดวงโหราศาสตร์คือแผนภูมิเรดาร์อยู่แล้วโดยธรรมชาติ
+   ทั้งหน้าจอจึงมีของเด่นชิ้นเดียวคือ "แผ่นผังดวง" ที่เติมทีละข้อ
+   ส่วนที่เหลือเงียบทั้งหมด: พื้นเรียบ เส้นบาง ไม่มีไล่เฉดที่ไม่จำเป็น
+   ลำดับ: ฟอนต์ → ตัวแปร → พื้นฐาน → โครง → ส่วนประกอบ → ฉาก → จอใหญ่
+   ============================================================ */
+
+/* ---------- 1. ตัวแปร ---------- */
+:root {
+  /* กลางคืน — ท้องฟ้าครามและเครื่องมือทองเหลือง */
+  --ink:        #0B1026;
+  --ink-2:      #131A3A;   /* ผิวที่ยกขึ้นมา เช่น การ์ด ตัวเลือก */
+  --ink-3:      #1B2350;   /* ผิวที่จมลงไป เช่น ร่องแถบ */
+  --line:       rgba(201,162,39,.22);
+  --line-2:     rgba(237,228,211,.12);
+  --brass:      #C9A227;
+  --on-brass:   #16110A;   /* ตัวอักษรบนพื้นทองเหลือง — สลับตามธีมเสมอ */
+  --verdigris:  #4FA893;
+  --vermeil:    #F0708A;   /* สัญญาณเดียวของหน้า: แกนที่เด่นที่สุด */
+  --bone:       #F0E9DA;
+  --bone-dim:   #A7A6B8;
+  --focus:      #7FE3C8;
+
+  /* ตัวอักษร — ไทยมีสระบนล่าง จึงเว้นบรรทัดกว้างกว่าภาษาละติน */
+  --display: "Trirong", "Noto Serif Thai", Georgia, serif;
+  --body:    "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  --mono:    "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  --t--1: .8125rem;
+  --t-0:  1rem;
+  --t-1:  1.0625rem;
+  --t-2:  clamp(1.1875rem, 3.6vw, 1.4375rem);
+  --t-3:  clamp(1.4375rem, 5.4vw, 2rem);
+  --t-4:  clamp(2rem, 8.6vw, 3.5rem);
+  --lh-body: 1.72;
+  --lh-tight: 1.34;
+
+  /* ระยะ — สเกลเดียวใช้ทั้งแอป */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --pad: var(--s4);
+  --tap: 48px;
+  --r-sm: 8px; --r-md: 14px; --r-lg: 20px;
+  --measure: 34rem;
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+
+/* กลางวัน — ตำราโหรบนสมุดข่อย ไม่ใช่แค่กลับสีจากกลางคืน */
+:root[data-theme="day"] {
+  --ink:        #E9E0C9;
+  --ink-2:      #F4EEDD;
+  --ink-3:      #DED2B4;
+  --line:       rgba(122,90,20,.28);
+  --line-2:     rgba(42,36,24,.14);
+  --brass:      #7A5A14;
+  --on-brass:   #FBF6E8;
+  --verdigris:  #2A6659;
+  --vermeil:    #A8324C;
+  --bone:       #2A2418;
+  --bone-dim:   #6C6353;
+  --focus:      #0D6B58;
+}
+
+/* ---------- 2. พื้นฐาน ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: var(--t-0);
+  line-height: var(--lh-body);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+button { font: inherit; color: inherit; background: none; border: 0; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: var(--r-sm); }
+.u-hidden { display: none !important; }
+.u-sr {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ---------- 3. ชั้นบรรยากาศ ----------
+   วงขอบแอสโตรเลบหมุนช้าอยู่หลังทุกอย่าง เป็นบรรยากาศอย่างเดียว
+   แยกออกจากแผนภูมิข้อมูลจริง เพื่อไม่ให้ตัวเลขถูกอ่านผิด */
+.sky {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.sky__rim {
+  width: min(148vmin, 1100px); aspect-ratio: 1;
+  color: var(--brass);
+  opacity: .3;
+  animation: rotate 240s linear infinite;
+}
+:root[data-theme="day"] .sky__rim { opacity: .38; }
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+/* ---------- 4. โครงหน้า ---------- */
+.app {
+  position: relative; z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.bar {
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--s3) max(var(--pad), env(safe-area-inset-right))
+           var(--s3) max(var(--pad), env(safe-area-inset-left));
+  padding-top: calc(var(--s3) + env(safe-area-inset-top));
+}
+.bar__spacer { flex: 1; }
+
+/* ตราประจำกิจกรรม — ใช้เป็นจุดยึดสายตาซ้ายบนทุกหน้า */
+.seal { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.seal__mark { width: 26px; height: 26px; flex: 0 0 auto; color: var(--brass); }
+.seal__text {
+  font-family: var(--mono); font-size: var(--t--1);
+  letter-spacing: .06em; color: var(--bone-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.main {
+  display: grid;
+  padding: 0 max(var(--pad), env(safe-area-inset-right))
+           0 max(var(--pad), env(safe-area-inset-left));
+}
+
+.foot {
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--s4); flex-wrap: wrap;
+  padding: var(--s3) var(--pad) calc(var(--s3) + env(safe-area-inset-bottom));
+  font-size: var(--t--1); color: var(--bone-dim);
+}
+
+/* ---------- 5. ฉาก ----------
+   ทุกฉากซ้อนในกริดช่องเดียวกัน จึงไขว้กันได้ตอนสลับโดยไม่กระโดด
+   แต่ฉากที่ไม่ได้ใช้ต้อง display:none ด้วย ไม่ใช่แค่ซ่อน
+   ไม่งั้นความสูงของหน้าจะเท่ากับฉากที่สูงที่สุดเสมอ (คือฉากผลลัพธ์)
+   หน้าแรกจะมีที่ว่างให้เลื่อนยาวเปล่า ๆ */
+/* ใช้ animation ไม่ใช่ transition เพราะ transition ไม่ทำงานในเฟรมเดียวกับที่
+   display เปลี่ยนจาก none เป็น flex ส่วน animation เริ่มเองได้ทันที */
+.screen {
+  grid-area: 1 / 1;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  width: 100%; max-width: 62rem; margin-inline: auto;
+  padding-block: var(--s5);
+}
+.screen.is-active {
+  display: flex;
+  animation: screenIn .44s var(--ease-out) both;
+}
+.screen.is-leaving {
+  display: flex; pointer-events: none;
+  animation: screenOut .3s var(--ease) both;
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(14px) scale(.99); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes screenOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-10px) scale(.99); }
+}
+
+/* ---------- 6. ตัวอักษร ---------- */
+.eyebrow {
+  font-family: var(--mono); font-size: var(--t--1);
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--brass);
+}
+.eyebrow--th { text-transform: none; letter-spacing: .08em; font-family: var(--body); }
+
+.display {
+  font-family: var(--display); font-weight: 600;
+  font-size: var(--t-4); line-height: 1.14;
+  letter-spacing: -.005em;
+}
+.title {
+  font-family: var(--display); font-weight: 600;
+  font-size: var(--t-3); line-height: var(--lh-tight);
+}
+.lede {
+  font-size: var(--t-1); color: var(--bone-dim);
+  max-width: var(--measure); line-height: var(--lh-body);
+}
+.fine { font-size: var(--t--1); color: var(--bone-dim); line-height: 1.62; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- 7. ปุ่ม ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--s2);
+  min-height: 54px; padding: var(--s3) var(--s6);
+  border-radius: 999px;
+  font-family: var(--body); font-weight: 600; font-size: var(--t-1);
+  background: var(--brass); color: var(--on-brass);
+  border: 1px solid var(--brass);
+  cursor: pointer; touch-action: manipulation;
+  transition: transform .16s var(--ease), filter .16s var(--ease);
+}
+.btn:active { transform: scale(.975); }
+@media (hover: hover) { .btn:hover { filter: brightness(1.1); } }
+
+.btn--quiet {
+  background: transparent; color: var(--bone);
+  border-color: var(--line);
+}
+@media (hover: hover) { .btn--quiet:hover { background: var(--ink-2); filter: none; } }
+
+.btn--chip {
+  min-height: 40px; padding: 0 var(--s4);
+  font-size: var(--t--1); font-weight: 500;
+  background: transparent; color: var(--bone-dim);
+  border: 1px solid var(--line-2);
+}
+@media (hover: hover) { .btn--chip:hover { color: var(--bone); border-color: var(--line); filter: none; } }
+
+.btn--link {
+  min-height: 40px; padding: 0 var(--s2);
+  font-size: var(--t--1); color: var(--bone-dim);
+  text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (hover: hover) { .btn--link:hover { color: var(--bone); } }
+
+.actions {
+  display: flex; flex-direction: column; gap: var(--s3);
+  width: 100%; max-width: 24rem; margin-top: var(--s6);
+}
+.actions .btn { width: 100%; }
+
+/* ---------- 8. แผ่นผังดวง (signature) ---------- */
+.plate { display: block; width: 100%; height: auto; }
+.plate__frame  { fill: none; stroke: var(--line); stroke-width: 1; }
+.plate__ring   { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.plate__spoke  { stroke: var(--line-2); stroke-width: 1; }
+.plate__corner { fill: var(--brass); opacity: .5; }
+
+.plate__area {
+  fill: var(--brass); fill-opacity: .16;
+  stroke: var(--brass); stroke-width: 2;
+  stroke-linejoin: round;
+}
+.plate__node {
+  fill: var(--ink); stroke: var(--brass); stroke-width: 1.5;
+  transition: r .3s var(--ease-out);
+}
+.plate__node.is-lead { fill: var(--vermeil); stroke: var(--vermeil); }
+.plate__label {
+  font-family: var(--body); font-size: 9px; font-weight: 500;
+  fill: var(--bone-dim);
+  text-anchor: middle; dominant-baseline: middle;
+}
+.plate__label.is-lead { fill: var(--vermeil); font-weight: 600; }
+.plate__value {
+  font-family: var(--mono); font-size: 7.5px;
+  fill: var(--brass); text-anchor: middle; dominant-baseline: middle;
+}
+
+/* จังหวะไฟวิ่งตอนประมวลผล — สั่งจาก JS ทีละแกน */
+.plate__spoke.is-lit { stroke: var(--brass); animation: spokeLit .7s var(--ease-out); }
+@keyframes spokeLit {
+  0%   { stroke: var(--vermeil); stroke-width: 3; }
+  100% { stroke: var(--brass);   stroke-width: 1; }
+}
+
+/* เส้นรอบรูปวาดตัวเองตอนเปิดผล */
+.plate--draw .plate__area {
+  stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+  animation: drawArea 1.1s var(--ease-out) forwards;
+}
+@keyframes drawArea { to { stroke-dashoffset: 0; } }
+
+.plate-wrap { position: relative; width: 100%; }
+.plate-wrap--mini  { width: 92px; flex: 0 0 auto; }
+.plate-wrap--cast  { width: min(74vw, 340px); }
+.plate-wrap--hero  { width: min(78vw, 330px); }
+
+/* ---------- 9. ฉากเปิด ---------- */
+.intro { text-align: center; gap: var(--s5); }
+.intro__plate { width: min(62vw, 260px); margin-inline: auto; }
+.intro__title { margin-top: var(--s4); }
+.intro__title em { font-style: normal; color: var(--brass); }
+
+/* ป้ายข้อเท็จจริง — กวาดตาอ่านได้เร็วกว่าประโยคเต็ม */
+.facts {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: var(--s2); margin-top: var(--s5);
+}
+.facts li {
+  font-size: var(--t--1); color: var(--bone-dim);
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--line-2); border-radius: 999px;
+}
+
+/* ลำดับการเข้าตอนโหลดหน้าแรก — เรียงทีละชิ้น ไม่ขึ้นพร้อมกันทั้งจอ */
+.screen.is-active .stagger > * {
+  animation: rise .6s var(--ease-out) both;
+}
+.screen.is-active .stagger > *:nth-child(1) { animation-delay: .05s; }
+.screen.is-active .stagger > *:nth-child(2) { animation-delay: .13s; }
+.screen.is-active .stagger > *:nth-child(3) { animation-delay: .21s; }
+.screen.is-active .stagger > *:nth-child(4) { animation-delay: .29s; }
+.screen.is-active .stagger > *:nth-child(5) { animation-delay: .37s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 10. ฉากคำถาม ---------- */
+.survey { justify-content: flex-start; gap: var(--s4); width: 100%; }
+
+.survey__head {
+  display: flex; align-items: center; gap: var(--s4);
+  width: 100%; max-width: var(--measure);
+}
+.survey__meta { flex: 1; min-width: 0; }
+.survey__domain {
+  font-family: var(--body); font-size: var(--t--1); font-weight: 600;
+  letter-spacing: .06em; color: var(--brass);
+}
+.survey__count { font-size: var(--t--1); color: var(--bone-dim); margin-top: 2px; }
+
+.ticks { display: flex; gap: var(--s1); margin-top: var(--s2); }
+.ticks b {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: var(--line-2);
+  transition: background .4s var(--ease);
+}
+.ticks b.is-done { background: var(--brass); }
+.ticks b.is-here { background: var(--vermeil); }
+
+.survey__stem {
+  font-family: var(--display); font-weight: 600;
+  font-size: var(--t-2); line-height: var(--lh-tight);
+  width: 100%; max-width: var(--measure);
+}
+
+.choices {
+  display: grid; gap: var(--s2);
+  width: 100%; max-width: var(--measure);
+}
+.choice {
+  display: flex; align-items: center; gap: var(--s3);
+  width: 100%; min-height: 60px; padding: var(--s3) var(--s4) var(--s3) var(--s3);
+  text-align: left;
+  background: var(--ink-2);
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  cursor: pointer; touch-action: manipulation;
+  transition: border-color .18s var(--ease), background .18s var(--ease),
+              transform .18s var(--ease);
+}
+.choice__key {
+  flex: 0 0 26px; height: 26px; border-radius: 6px;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: var(--t--1); font-weight: 500;
+  background: var(--ink-3); color: var(--bone-dim);
+  border: 1px solid var(--line-2);
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.choice__text { flex: 1; min-width: 0; font-size: var(--t-0); line-height: 1.5; }
+
+@media (hover: hover) {
+  .choice:hover { border-color: var(--line); background: var(--ink-3); }
+  .choice:hover .choice__key { background: var(--brass); color: var(--on-brass); }
+}
+.choice:active { transform: scale(.99); }
+/* กล้องเล็งอยู่ที่ข้อนี้ — ยังไม่นับว่าเลือก */
+.choice.is-aimed { border-color: var(--brass); background: var(--ink-3); }
+.choice.is-aimed .choice__key { background: var(--brass); color: var(--on-brass); }
+/* เลือกแล้ว — วาบทองก่อนออกจากจอ */
+.choice.is-picked {
+  border-color: var(--brass);
+  animation: pickFlash .4s var(--ease-out);
+}
+@keyframes pickFlash {
+  0%   { background: var(--brass); border-color: var(--brass); }
+  100% { background: var(--ink-3); border-color: var(--brass); }
+}
+/* ข้ออื่นถอยออกไปตอนเปลี่ยนคำถาม */
+.choices.is-clearing .choice:not(.is-picked) {
+  opacity: 0; transform: translateX(-8px);
+  transition: opacity .22s var(--ease), transform .22s var(--ease);
+}
+
+/* ---------- 11. ฉากประมวลผล ---------- */
+.cast { text-align: center; gap: var(--s5); }
+.cast__status {
+  font-family: var(--mono); font-size: var(--t--1);
+  letter-spacing: .06em; color: var(--brass); min-height: 1.6em;
+}
+
+/* ---------- 12. ฉากผลลัพธ์ ---------- */
+.result { gap: var(--s5); width: 100%; }
+.result__head { text-align: center; display: grid; gap: var(--s3); justify-items: center; }
+.result__name { color: var(--brass); }
+
+.card {
+  width: 100%; max-width: var(--measure);
+  background: var(--ink-2);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  padding: var(--s5);
+  display: grid; gap: var(--s5);
+}
+.card__block { display: grid; gap: var(--s2); }
+.card__label {
+  font-family: var(--body); font-size: var(--t--1); font-weight: 600;
+  letter-spacing: .06em; color: var(--brass);
+}
+.card__body { font-size: var(--t-0); line-height: var(--lh-body); }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.chip {
+  font-size: var(--t--1); padding: var(--s1) var(--s3);
+  background: var(--ink-3); border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+}
+
+.bullets { display: grid; gap: var(--s2); }
+.bullets li {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  font-size: var(--t-0);
+}
+.bullets li::before {
+  content: ""; flex: 0 0 6px; height: 6px; margin-top: .62em;
+  background: var(--brass); transform: rotate(45deg);
+}
+
+/* แถบคะแนนรายแกน — ใช้เปอร์เซ็นต์หลัง normalize ตัวเลขจึงเทียบกันได้จริง */
+.axes { display: grid; gap: var(--s3); }
+.axis-row {
+  display: grid; grid-template-columns: 5.5rem 1fr 2.75rem;
+  align-items: center; gap: var(--s3);
+}
+.axis-row__name { font-size: var(--t--1); color: var(--bone-dim); }
+.axis-row__track {
+  height: 8px; border-radius: 999px;
+  background: var(--ink-3); overflow: hidden;
+}
+.axis-row__fill {
+  display: block; height: 100%; width: 0;
+  background: var(--verdigris); border-radius: 999px;
+  transition: width .9s var(--ease-out);
+}
+.axis-row.is-lead .axis-row__name { color: var(--vermeil); font-weight: 600; }
+.axis-row.is-lead .axis-row__fill { background: var(--vermeil); }
+.axis-row__pct {
+  font-family: var(--mono); font-size: var(--t--1);
+  font-variant-numeric: tabular-nums; text-align: right; color: var(--bone-dim);
+}
+
+/* ---------- 13. หน้ารวมหกสาย ---------- */
+.paths { display: grid; gap: var(--s3); width: 100%; max-width: var(--measure); }
+.path-row {
+  display: grid; grid-template-columns: auto 1fr; gap: var(--s4);
+  align-items: start;
+  padding: var(--s4);
+  background: var(--ink-2); border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+}
+.path-row__glyph { width: 38px; height: 38px; color: var(--brass); }
+.path-row__name { font-family: var(--display); font-weight: 600; font-size: var(--t-1); color: var(--brass); }
+.path-row__jobs { font-size: var(--t--1); color: var(--bone-dim); margin-top: var(--s1); }
+.path-row__study { font-size: var(--t--1); color: var(--bone-dim); margin-top: var(--s2); opacity: .8; }
+
+/* ---------- 14. กล่องกล้อง (โหมดบูธ) ---------- */
+.cam {
+  width: 100%; max-width: var(--measure);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  padding: var(--s4);
+  display: grid; gap: var(--s3);
+}
+.cam__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--t--1); font-weight: 600; color: var(--brass);
+}
+.cam__stage {
+  position: relative; aspect-ratio: 16 / 9;
+  border-radius: var(--r-md); overflow: hidden;
+  background: #05060F; border: 1px solid var(--line-2);
+}
+.cam__video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  transform: scaleX(-1); opacity: .85;
+}
+.cam__zones { position: absolute; inset: 0; display: flex; }
+.cam__zone {
+  flex: 1; position: relative;
+  display: grid; place-items: center;
+  border-right: 1px solid rgba(240,233,218,.24);
+}
+.cam__zone:last-child { border-right: 0; }
+.cam__fill {
+  position: absolute; inset: auto 0 0 0; height: 0;
+  background: rgba(201,162,39,.5);
+  transition: height .1s linear;
+}
+.cam__zone.is-aimed { box-shadow: inset 0 0 0 2px var(--brass); }
+.cam__num {
+  position: relative;
+  font-family: var(--mono); font-size: clamp(18px, 5vw, 26px); font-weight: 500;
+  color: #fff; text-shadow: 0 1px 6px #000;
+}
+.cam__off {
+  position: absolute; inset: 0;
+  display: grid; place-items: center; padding: var(--s4);
+  text-align: center; font-size: var(--t--1);
+  background: rgba(11,16,38,.9); color: var(--bone-dim);
+}
+.cam__hint { font-size: var(--t--1); color: var(--bone-dim); min-height: 2.6em; text-align: center; }
+.cam__ctl { display: flex; align-items: center; justify-content: center; gap: var(--s3); flex-wrap: wrap; }
+.cam__ctl label { font-size: var(--t--1); color: var(--bone-dim); }
+.cam__ctl input[type="range"] { width: 140px; height: 36px; accent-color: var(--brass); }
+
+/* ---------- 15. แผงสถิติบูธ ---------- */
+.panel {
+  position: fixed; inset: 0; z-index: 20;
+  background: var(--ink);
+  overflow: auto; overscroll-behavior: contain;
+  padding: calc(var(--s5) + env(safe-area-inset-top)) var(--pad)
+           calc(var(--s6) + env(safe-area-inset-bottom));
+}
+.panel__inner { max-width: 56rem; margin-inline: auto; display: grid; gap: var(--s5); }
+.panel__head { display: grid; gap: var(--s2); }
+
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s3); }
+.stat {
+  padding: var(--s4);
+  background: var(--ink-2); border: 1px solid var(--line-2); border-radius: var(--r-md);
+}
+.stat__value {
+  display: block; font-family: var(--mono); font-size: 1.75rem;
+  font-variant-numeric: tabular-nums; color: var(--brass); line-height: 1.2;
+}
+.stat__value--text { font-family: var(--display); font-size: var(--t-1); }
+.stat__label { display: block; font-size: var(--t--1); color: var(--bone-dim); margin-top: var(--s1); }
+
+/* การกระจายผลลัพธ์ — บอกเจ้าหน้าที่ว่าคำถามชุดนี้ให้ผลสมดุลจริงไหม */
+.dist { display: grid; gap: var(--s2); }
+.dist__row { display: grid; grid-template-columns: 7rem 1fr 3.5rem; align-items: center; gap: var(--s3); }
+.dist__name { font-size: var(--t--1); color: var(--bone-dim); }
+.dist__track { height: 10px; background: var(--ink-3); border-radius: 999px; overflow: hidden; }
+.dist__fill { display: block; height: 100%; background: var(--brass); border-radius: 999px; }
+.dist__n { font-family: var(--mono); font-size: var(--t--1); text-align: right; color: var(--bone-dim); }
+
+.tablewrap {
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+table { width: 100%; min-width: 34rem; border-collapse: collapse; font-size: var(--t--1); }
+th, td {
+  padding: var(--s3) var(--s4); text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--line-2);
+}
+tbody tr:last-child td { border-bottom: 0; }
+th { color: var(--brass); font-weight: 600; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.panel__actions { display: flex; flex-wrap: wrap; gap: var(--s3); }
+
+/* ---------- 16. แถบแจ้งเตือนติดตั้งแอป ---------- */
+.install {
+  position: fixed; left: 50%; bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 15; width: min(28rem, calc(100vw - 2 * var(--pad)));
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  background: var(--ink-2); border: 1px solid var(--line);
+  border-radius: 999px;
+  animation: rise .5s var(--ease-out) both;
+}
+.install__text { flex: 1; font-size: var(--t--1); }
+
+/* ---------- 17. จอกลางขึ้นไป ---------- */
+@media (min-width: 40rem) {
+  :root { --pad: var(--s5); }
+  .actions { flex-direction: row; max-width: none; width: auto; justify-content: center; }
+  .actions .btn { width: auto; }
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .choice { min-height: 64px; padding: var(--s4); }
+  .choice__text { font-size: var(--t-1); }
+}
+
+@media (min-width: 60rem) {
+  :root { --t-0: 1.0625rem; --measure: 38rem; }
+  .plate-wrap--hero { width: 380px; }
+  .plate-wrap--cast { width: 420px; }
+  .survey__head { max-width: var(--measure); }
+  /* จอบูธกว้าง — ตัวเลือกสองคอลัมน์ เห็นครบทุกข้อโดยไม่ต้องเลื่อน */
+  :root[data-mode="kiosk"] .choices { grid-template-columns: 1fr 1fr; }
+  :root[data-mode="kiosk"] .choices { max-width: 54rem; }
+  :root[data-mode="kiosk"] .survey__stem,
+  :root[data-mode="kiosk"] .survey__head,
+  :root[data-mode="kiosk"] .cam { max-width: 54rem; }
+}
+
+/* โหมดบูธบนจอใหญ่ — ตัวอักษรใหญ่ขึ้นเพราะผู้เล่นยืนห่างจอ */
+:root[data-mode="kiosk"] { --t-0: 1.125rem; --t--1: .875rem; }
+
+/* ---------- 18. เคารพการลดการเคลื่อนไหว ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .screen { transform: none; }
+  .sky__rim { animation: none; }
+}
