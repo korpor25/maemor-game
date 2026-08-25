@@ -17,10 +17,21 @@ const LOST_GRACE_MS = 400;         // มือหลุดเฟรมชั่
 
 /* เกณฑ์ตัดสินว่านิ้วเหยียด — วัดจากมุมที่ข้อกลางนิ้ว
    ใช้มุมแทนการเทียบความสูง เพราะมุมไม่เปลี่ยนตามการเอียงหรือหมุนมือ
-   ผู้เล่นที่บูธไม่ได้ยกมือตั้งฉากกับกล้องเสมอไป */
-const ANGLE_FINGER = 145;          // องศา ข้อ PIP ของสี่นิ้ว
-const ANGLE_THUMB = 150;           // นิ้วโป้งงอน้อยกว่านิ้วอื่นโดยธรรมชาติ
-const THUMB_AWAY = 0.55;           // นิ้วโป้งต้องกางออกจากฝ่ามืออย่างน้อยเท่านี้ของขนาดมือ
+   ผู้เล่นที่บูธไม่ได้ยกมือตั้งฉากกับกล้องเสมอไป
+
+   มีสองเกณฑ์ต่อหนึ่งนิ้ว ขาขึ้นสูงกว่าขาลง
+   เดิมใช้เส้นเดียวที่ 145 องศา นิ้วที่ค้างอยู่แถวเส้นพอดีจะสลับสถานะทุกเฟรม
+   จำนวนนิ้วเลยกระพริบไปมา แล้วตัวจับเวลาค้างท่าถูกล้างทิ้งตลอดจนวงแหวนไม่มีวันเต็ม */
+const FINGER_UP = 152;             // องศา ต้องเกินเท่านี้จึงเริ่มนับว่าเหยียด
+const FINGER_DOWN = 138;           // เหยียดอยู่แล้วต้องต่ำกว่านี้จึงนับว่างอ
+const THUMB_UP = 156;              // นิ้วโป้งงอน้อยกว่านิ้วอื่นโดยธรรมชาติ
+const THUMB_DOWN = 144;
+const AWAY_UP = 0.60;              // นิ้วโป้งต้องกางออกจากฝ่ามืออย่างน้อยเท่านี้ของขนาดมือ
+const AWAY_DOWN = 0.50;
+
+/* จำนวนผลตรวจล่าสุดที่เอามาโหวตกัน กันไม่ให้เฟรมเดียวที่อ่านพลาดเปลี่ยนคำตอบ */
+const VOTE_FRAMES = 5;
+const VOTE_MIN = 3;
 
 /* ลำดับข้อต่อของแต่ละนิ้ว [โคน, ข้อกลาง, ปลาย] */
 const FINGERS = [
@@ -51,21 +62,27 @@ function angleAt(a, b, c) {
   return Math.acos(Math.max(-1, Math.min(1, dot / m))) * 180 / Math.PI;
 }
 
-/* คืนสถานะการเหยียดของนิ้วทั้งห้า เรียงจากโป้งไปก้อย */
-export function readFingers(lm) {
+/** คืนสถานะการเหยียดของนิ้วทั้งห้า เรียงจากโป้งไปก้อย
+ *  @param prev สถานะจากเฟรมก่อน ใช้เลือกว่าจะวัดด้วยเกณฑ์ขาขึ้นหรือขาลง
+ *              ไม่ส่งมาก็ได้ จะถือว่าทุกนิ้วงออยู่ แล้ววัดด้วยเกณฑ์ขาขึ้น */
+export function readFingers(lm, prev) {
   const wrist = lm[0];
   const palm = dist(wrist, lm[9]) || 1;      // ใช้เป็นหน่วยวัดขนาดมือ
+  const was = i => !!(prev && prev[i]);
 
   /* นิ้วโป้งต้องดูสองอย่าง: ข้อไม่งอ และกางออกจากฝ่ามือจริง
      ถ้าดูแค่มุม นิ้วโป้งที่พับทับฝ่ามือจะยังนับว่าเหยียดอยู่ */
-  const thumbStraight = angleAt(lm[2], lm[3], lm[4]) > ANGLE_THUMB;
-  const thumbAway = dist(lm[4], lm[17]) / palm > THUMB_AWAY;
-  const out = [thumbStraight && thumbAway];
+  const bend = angleAt(lm[2], lm[3], lm[4]);
+  const gap = dist(lm[4], lm[17]) / palm;
+  const out = [was(0)
+    ? bend > THUMB_DOWN && gap > AWAY_DOWN
+    : bend > THUMB_UP && gap > AWAY_UP];
 
-  for (const f of FINGERS) {
+  FINGERS.forEach((f, i) => {
     const [mcp, pip, tip] = f.joints;
-    out.push(angleAt(lm[mcp], lm[pip], lm[tip]) > ANGLE_FINGER);
-  }
+    const a = angleAt(lm[mcp], lm[pip], lm[tip]);
+    out.push(a > (was(i + 1) ? FINGER_DOWN : FINGER_UP));
+  });
   return out;
 }
 
@@ -134,6 +151,11 @@ export class HandCounter {
     this.lockUntil = 0;
     this.lastT = 0;
     this.lastVideoTime = -1;
+    /* เก็บผลตรวจล่าสุดไว้ใช้ซ้ำในรอบที่ภาพจากกล้องยังไม่เปลี่ยน */
+    this.lastHands = [];
+    this.lastFingers = null;
+    this.votes = [];
+    this.stable = 0;
   }
 
   get ready() { return !!this.landmarker && !!this.stream; }
@@ -154,9 +176,11 @@ export class HandCounter {
         /* มือเดียวพอ เพราะทุกข้อมีไม่เกินห้าตัวเลือก
            รับมือเดียวยังเร็วกว่า และตัดโอกาสที่มือของคนที่เดินผ่านจะถูกนับรวมเข้ามา */
         numHands: 1,
+        /* เกณฑ์ตอนเจอมือครั้งแรกตั้งไว้กลาง ๆ แต่เกณฑ์ตอนตามมือเดิมตั้งต่ำกว่า
+           โมเดลจะได้เกาะมือต่อไปแม้เฟรมนั้นจะไม่มั่นใจ ไม่ปล่อยหลุดแล้วจับใหม่สลับไปมา */
         minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        minHandPresenceConfidence: 0.4,
+        minTrackingConfidence: 0.4
       });
       this.on.onStatus?.("loaded");
       return this.landmarker;
@@ -204,6 +228,8 @@ export class HandCounter {
     this.held = 0;
     this.heldValue = 0;
     this.lostFor = 0;
+    this.votes = [];
+    this.stable = 0;
   }
 
   start() {
@@ -231,22 +257,47 @@ export class HandCounter {
     }
 
     /* detectForVideo ต้องได้เวลาที่เดินหน้าเสมอ ถ้าเฟรมยังไม่เปลี่ยนก็ข้ามไป
-       ไม่งั้นโมเดลจะโยน error เรื่อง timestamp ย้อนหลัง */
-    let hands = [];
+       ไม่งั้นโมเดลจะโยน error เรื่อง timestamp ย้อนหลัง
+
+       กล้องส่งภาพราวสามสิบเฟรมต่อวินาที แต่ลูปนี้เดินตามจอที่หกสิบ
+       ครึ่งหนึ่งของรอบจึงไม่มีภาพใหม่ให้ตรวจ ต้องใช้ผลเดิมต่อ
+       เดิมรายงานว่าไม่เจอมือในรอบพวกนั้น โครงมือเลยกระพริบดับสว่างสลับกันทั้งวินาที */
+    let fresh = false;
     if (v.currentTime !== this.lastVideoTime) {
       this.lastVideoTime = v.currentTime;
+      fresh = true;
       try {
         const res = this.landmarker.detectForVideo(v, now);
-        hands = res?.landmarks || [];
-      } catch { /* เฟรมเสีย ข้ามไปเฟรมถัดไป */ }
+        const found = res?.landmarks || [];
+        this.lastHands = found.map(lm => {
+          const fingers = readFingers(lm, this.lastFingers);
+          this.lastFingers = fingers;
+          return { landmarks: lm, fingers };
+        });
+        if (!found.length) this.lastFingers = null;
+      } catch { /* เฟรมเสีย ใช้ผลเดิมต่อไปก่อน */ }
     }
 
-    const perHand = hands.map(lm => ({ landmarks: lm, fingers: readFingers(lm) }));
+    const perHand = this.lastHands;
     const raw = perHand.reduce((s, h) => s + h.fingers.filter(Boolean).length, 0);
-    const value = Math.min(raw, this.maxCount);
+
+    /* โหวตจากผลตรวจห้าครั้งหลังสุด ต้องตรงกันอย่างน้อยสามครั้งจึงยอมเปลี่ยนตัวเลข
+       เฟรมเดียวที่อ่านพลาด เช่นนิ้วบังกันหรือแสงวูบ จะไม่ล้มการนับที่กำลังเดินอยู่ */
+    if (fresh) {
+      this.votes.push(raw);
+      if (this.votes.length > VOTE_FRAMES) this.votes.shift();
+      const tally = new Map();
+      for (const n of this.votes) tally.set(n, (tally.get(n) || 0) + 1);
+      let best = this.stable, bestCount = 0;
+      for (const [n, c] of tally) if (c > bestCount) { bestCount = c; best = n; }
+      if (bestCount >= VOTE_MIN) this.stable = best;
+    }
+
+    const value = Math.min(this.stable, this.maxCount);
+    const seen = perHand.length > 0;
     const locked = now < this.lockUntil;
 
-    if (!hands.length) {
+    if (!seen) {
       /* มือหลุดเฟรม — ผ่อนผันสั้น ๆ ก่อนล้างค่า มือสั่นหรือออกนอกขอบชั่วครู่จะได้ไม่ต้องเริ่มใหม่ */
       this.lostFor += dt;
       if (this.lostFor > LOST_GRACE_MS) { this.held = 0; this.heldValue = 0; }
@@ -260,11 +311,12 @@ export class HandCounter {
       }
     }
 
-    this.on.onFrame?.({ hands: perHand, count: value, raw });
+    /* วาดโครงมือใหม่เฉพาะตอนมีภาพใหม่จริง ไม่งั้นเป็นการล้างแล้ววาดซ้ำเปล่า ๆ */
+    if (fresh) this.on.onFrame?.({ hands: perHand, count: value, raw });
     this.on.onProgress?.({
-      count: this.held > 0 ? this.heldValue : (hands.length ? value : 0),
+      count: this.held > 0 ? this.heldValue : (seen ? value : 0),
       progress: this.held / HOLD_MS,
-      seen: hands.length > 0,
+      seen,
       locked
     });
 

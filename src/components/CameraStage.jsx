@@ -21,6 +21,7 @@ export default function CameraStage({ active, optionCount, onPick, enabled, onAi
   const canvasRef = useRef(null);
   const handsRef = useRef(null);
   const bootRef = useRef(null);
+  const aimRef = useRef(0);
 
   const [phase, setPhase] = useState("loading");   // loading | live | denied | failed | off
   const [progress, setProgress] = useState(0);
@@ -68,10 +69,22 @@ export default function CameraStage({ active, optionCount, onPick, enabled, onAi
   useEffect(() => {
     const h = new HandCounter({
       onFrame: drawSkeleton,
+      /* ลูปนับนิ้วเรียกตรงนี้หกสิบครั้งต่อวินาที ห้ามสั่ง setState ทุกครั้ง
+         เดิมเรียกทุกรอบ ทั้งหน้าจึงเรนเดอร์ใหม่หกสิบครั้งต่อวินาที
+         ตัวเลขในวงแหวนและกรอบไฮไลต์ของตัวเลือกเลยกระพริบตามไปด้วย
+
+         ปัดความคืบหน้าเป็นขั้นละ 1/24 ก่อนเทียบ วงแหวนยังเดินลื่นเพราะ CSS
+         ค่อย ๆ เลื่อนให้อยู่แล้ว แต่จำนวนครั้งที่เรนเดอร์ลดจากหกสิบเหลือไม่เกินยี่สิบสี่ */
       onProgress: p => {
         const armed = p.seen && p.count >= 1 && !p.locked;
-        setTally({ count: p.count, progress: p.progress, armed });
-        onAimChange?.(armed && p.progress > 0 ? p.count : 0);
+        const step = Math.round(p.progress * 24) / 24;
+        setTally(prev =>
+          prev.count === p.count && prev.armed === armed && prev.progress === step
+            ? prev
+            : { count: p.count, progress: step, armed });
+
+        const aim = armed && p.progress > 0 ? p.count : 0;
+        if (aim !== aimRef.current) { aimRef.current = aim; onAimChange?.(aim); }
       },
       onPick: count => onPick(count - 1),      // ชู n นิ้ว = ตัวเลือกที่ n
       onStatus: kind => {
