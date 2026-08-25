@@ -1,0 +1,20 @@
+{
+  "name": "ผังดวงอาชีพ — แบบสำรวจความสนใจด้านเทคโนโลยีและอาชีพดิจิทัล",
+  "short_name": "ผังดวงอาชีพ",
+  "description": "ตอบ 6 ข้อด้วยการชูนิ้วหน้ากล้อง แล้วอ่านผลเป็นผังดวงหกแกน โดยหลักสูตรเทคโนโลยีสารสนเทศ มทร.ล้านนา ลำปาง",
+  "lang": "th",
+  "start_url": "/",
+  "scope": "/",
+  "id": "phangduang-archeep",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#BDD8EF",
+  "theme_color": "#BDD8EF",
+  "categories": ["education"],
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

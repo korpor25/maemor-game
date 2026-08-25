@@ -4,9 +4,9 @@
 
    เรนเดอร์ด้วย Chrome ที่ติดตั้งอยู่แล้วผ่าน --print-to-pdf จึงไม่ต้องลง puppeteer
    ฟอนต์ถูกฝังเป็น data URI เพราะ Chrome ปฏิเสธการโหลดฟอนต์ข้ามไฟล์เมื่อเปิดผ่าน file:// */
-import { PATHS, QUESTIONS, AXES, CEILING } from "../app/public/src/data.js";
-import { pointAt, polygonOf, PLATE } from "../app/public/src/chart.js";
-import { HAND_BONES, readFingers } from "../app/public/src/hands.js";
+import { PATHS, QUESTIONS, AXES, CEILING } from "../src/lib/data.js";
+import { pointAt, polygonOf, PLATE } from "../src/lib/plate.js";
+import { HAND_BONES, readFingers } from "../src/lib/hands.js";
 import { makeHand, POSES } from "./hand-poses.mjs";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -28,14 +28,14 @@ const RULE = "#CBD8E4";
 
 /* ---------- ฝังฟอนต์ ---------- */
 const FONTS = [
-  ["Display", 700, ["anuphan-700-thai", "anuphan-700-latin"]],
-  ["Plex Thai", 400, ["anuphan-400-thai", "anuphan-400-latin"]],
-  ["Plex Thai", 500, ["anuphan-500-thai", "anuphan-500-latin"]],
+  ["Display", 700, ["ibm-plex-sans-thai-700-thai", "ibm-plex-sans-thai-700-latin"]],
+  ["Plex Thai", 400, ["ibm-plex-sans-thai-400-thai", "ibm-plex-sans-thai-400-latin"]],
+  ["Plex Thai", 500, ["ibm-plex-sans-thai-500-thai", "ibm-plex-sans-thai-500-latin"]],
   ["Plex Mono", 400, ["ibm-plex-mono-400-latin"]]
 ];
 const fontFaces = FONTS.flatMap(([family, weight, files]) =>
   files.map(f => {
-    const b64 = readFileSync(`app/public/assets/fonts/${f}.woff2`).toString("base64");
+    const b64 = readFileSync(`public/fonts/${f}.woff2`).toString("base64");
     return `@font-face{font-family:"${family}";font-weight:${weight};font-style:normal;` +
            `font-display:block;src:url(data:font/woff2;base64,${b64}) format("woff2")}`;
   })).join("\n");

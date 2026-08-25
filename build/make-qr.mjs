@@ -48,12 +48,21 @@ const poster = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <title>ป้าย QR — ผังดวงอาชีพ</title>
-<link rel="stylesheet" href="../../app/public/src/fonts.css">
+<style>
+${["400", "700"].map(w => `
+  @font-face{font-family:"Sans";font-weight:${w};font-display:block;
+    src:url(data:font/woff2;base64,${readFileSync(`public/fonts/ibm-plex-sans-thai-${w}-thai.woff2`).toString("base64")}) format("woff2");
+    unicode-range:U+0E01-0E5B,U+200C-200D,U+25CC}
+  @font-face{font-family:"Sans";font-weight:${w};font-display:block;
+    src:url(data:font/woff2;base64,${readFileSync(`public/fonts/ibm-plex-sans-thai-${w}-latin.woff2`).toString("base64")}) format("woff2")}`).join("")}
+  @font-face{font-family:"Mono";font-weight:400;font-display:block;
+    src:url(data:font/woff2;base64,${readFileSync("public/fonts/ibm-plex-mono-400-latin.woff2").toString("base64")}) format("woff2")}
+</style>
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; }
   body {
-    font-family: "Anuphan", sans-serif;
+    font-family: "Sans", sans-serif;
     background: #6B7280; display: grid; place-items: center; padding: 20px;
   }
   .sheet {
@@ -65,7 +74,7 @@ const poster = `<!DOCTYPE html>
     font-size: 5mm; letter-spacing: .1em; color: #5E95F7;
   }
   h1 {
-    font-family: "Anuphan", sans-serif; font-weight: 700; letter-spacing: -.02em;
+    font-family: "Sans", sans-serif; font-weight: 700; letter-spacing: -.02em;
     font-size: 20mm; line-height: 1.1;
   }
   h1 em { font-style: normal; color: #5E95F7; }
@@ -75,7 +84,7 @@ const poster = `<!DOCTYPE html>
   .qr { display: block; width: 88mm; height: 88mm; }
   .cta { font-size: 6mm; font-weight: 600; color: #5E95F7; }
   .url {
-    font-family: "IBM Plex Mono", monospace; font-size: 4.2mm;
+    font-family: "Mono", monospace; font-size: 4.2mm;
     color: #8C97A6; word-break: break-all; max-width: 150mm;
   }
   .facts { display: flex; gap: 4mm; flex-wrap: wrap; justify-content: center; list-style: none; padding: 0; }

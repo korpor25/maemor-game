@@ -2,7 +2,7 @@
    ส่วนนี้เป็นคณิตศาสตร์ล้วน จึงทดสอบได้โดยไม่ต้องมีกล้องหรือมือจริง
    สิ่งที่เทสต์นี้ยืนยัน: เกณฑ์มุมและเกณฑ์การกางนิ้วโป้งตัดสินถูกต้อง
    สิ่งที่เทสต์นี้ยืนยันไม่ได้: โมเดลหาจุดข้อต่อได้แม่นแค่ไหนกับมือจริงในแสงจริง */
-import { readFingers, countFingers } from "../app/public/src/hands.js";
+import { readFingers, countFingers } from "../src/lib/hands.js";
 import { makeHand } from "./hand-poses.mjs";
 
 const NAMES = ["โป้ง", "ชี้", "กลาง", "นาง", "ก้อย"];

@@ -1,50 +1,49 @@
-/* สร้าง service worker พร้อมรายการไฟล์และเลขรุ่นที่คำนวณจากเนื้อไฟล์จริง
-   เขียนรายการเองด้วยมือมักลืมอัปเดตเวลาเพิ่มไฟล์ แล้วเครื่องที่ติดตั้งไว้
-   จะค้างอยู่กับรุ่นเก่าโดยไม่มีใครรู้ตัว จึงให้สคริปต์สร้างให้ทุกครั้งที่ build */
+/* สร้าง service worker หลัง next build โดยอ่านชื่อไฟล์จริงจาก out/
+   Next ใส่แฮชไว้ในชื่อไฟล์ JS และ CSS การเขียนรายการเองด้วยมือจึงเป็นไปไม่ได้
+   ต้องให้สคริปต์อ่านผลลัพธ์จริงทุกครั้งที่ build
+
+   กลยุทธ์สองชั้น
+     · ตัวแอป (ไม่ถึงหนึ่งเมกะไบต์) เก็บเข้าแคชตั้งแต่ตอนติดตั้ง เปิดปุ๊บเล่นได้ปั๊บ
+     · โมเดลนับนิ้ว (สิบเก้าเมกะไบต์) เก็บตอนถูกเรียกใช้ครั้งแรก
+       ถ้าใส่ไว้ตอนติดตั้ง ผู้ที่สแกน QR จะต้องรอโหลดจนครบก่อนจึงเริ่มเล่นได้ */
 import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, posix } from "node:path";
 
-const ROOT = "app/public";
-const SKIP = new Set(["sw.js"]);
+const OUT = "out";
 
-function walk(dir, base = "") {
-  const out = [];
-  for (const name of readdirSync(join(ROOT, dir))) {
+function walk(dir = ".", base = "") {
+  const found = [];
+  for (const name of readdirSync(join(OUT, dir))) {
     const rel = base ? posix.join(base, name) : name;
-    if (SKIP.has(rel)) continue;
-    const full = join(ROOT, dir, name);
-    if (statSync(full).isDirectory()) out.push(...walk(join(dir, name), rel));
-    else out.push(rel);
+    const full = join(OUT, dir, name);
+    if (statSync(full).isDirectory()) found.push(...walk(join(dir, name), rel));
+    else found.push(rel);
   }
-  return out;
+  return found;
 }
 
-const files = walk(".").sort();
+const files = walk().sort();
+if (!files.length) {
+  console.error("ไม่พบไฟล์ใน out/ — ต้องรัน next build ก่อน");
+  process.exit(1);
+}
+
 const hash = createHash("sha256");
-for (const f of files) hash.update(f).update(readFileSync(join(ROOT, f)));
+for (const f of files) hash.update(f).update(readFileSync(join(OUT, f)));
 const version = hash.digest("hex").slice(0, 10);
 
-/* ไม่ precache "./index.html" ตรง ๆ เพราะโฮสต์หลายเจ้า (Vercel และ serve) ตอบ
-   /index.html ด้วย redirect ไป / — และ Cache.put ปฏิเสธ response ที่ถูก redirect
-   ถ้าใส่ไว้ cache.addAll จะ throw ทั้งชุด แล้ว service worker ติดตั้งไม่สำเร็จเลย
-   ออฟไลน์จะพังเงียบ ๆ โดยไม่มีอะไรฟ้อง จึงเก็บเอกสารผ่าน "./" อย่างเดียว
+/* index.html เข้าถึงผ่าน "/" อยู่แล้ว และโฮสต์บางเจ้าตอบ /index.html ด้วย redirect
+   ซึ่ง Cache.put ปฏิเสธ ถ้าใส่ไว้จะทำให้ติดตั้งไม่สำเร็จทั้งชุดโดยไม่มีอะไรฟ้อง */
+const isLazy = f => f.startsWith("mp/");
+const skip = f => f === "sw.js" || f === "index.html" || f.endsWith(".map");
 
-   ไฟล์โมเดลนับนิ้วใน assets/mp รวมกันราว 19 เมกะไบต์ ใหญ่เกินกว่าจะดึงตอนติดตั้ง
-   ถ้าใส่ไว้ ผู้ที่สแกน QR จะต้องรอโหลดจนครบก่อนถึงจะเริ่มเล่นได้
-   จึงปล่อยให้ตัวจัดการ fetch เก็บเข้าแคชตอนใช้งานจริงครั้งแรกแทน
-   หลังเล่นจบรอบแรก เครื่องนั้นก็ใช้กล้องแบบออฟไลน์ได้แล้ว
-   แต่เลขรุ่นยังคำนวณรวมไฟล์เหล่านี้ด้วย พอโมเดลเปลี่ยนแคชเก่าจึงถูกล้างตามไปด้วย */
-const isLazy = f => f.startsWith("assets/mp/");
-const assets = ["./", ...files.filter(f => f !== "index.html" && !isLazy(f)).map(f => "./" + f)];
-const lazyCount = files.filter(isLazy).length;
+const core = files.filter(f => !isLazy(f) && !skip(f));
+const assets = ["/", ...core.map(f => "/" + f)];
 
-const sw = `/* สร้างอัตโนมัติโดย build/make-sw.mjs — อย่าแก้ไฟล์นี้ด้วยมือ
-   กลยุทธ์สองชั้น:
-     · ตัวแอป (ไม่ถึงหนึ่งเมกะไบต์) เก็บเข้าแคชตั้งแต่ตอนติดตั้ง เปิดปุ๊บเล่นได้ปั๊บ
-     · โมเดลนับนิ้ว (สิบเก้าเมกะไบต์) เก็บตอนถูกเรียกใช้ครั้งแรก
-   เสิร์ฟจากแคชก่อนเสมอ แอปนี้ไม่มีข้อมูลจากเซิร์ฟเวอร์เลย แคชจึงเป็นแหล่งความจริงได้เต็มตัว
-   เลขรุ่นคำนวณจากเนื้อไฟล์ พอมีไฟล์ไหนเปลี่ยน แคชเก่าจะถูกลบทั้งชุด */
+const sw = `/* สร้างอัตโนมัติโดย build/make-sw.mjs หลัง next build — อย่าแก้ไฟล์นี้ด้วยมือ
+   เลขรุ่นคำนวณจากเนื้อไฟล์จริงทุกไฟล์ พอมีอะไรเปลี่ยน แคชเก่าจะถูกลบทั้งชุด
+   เครื่องที่ติดตั้งไว้แล้วจึงไม่ค้างอยู่กับรุ่นเก่าโดยไม่มีใครรู้ตัว */
 
 const VERSION = ${JSON.stringify(version)};
 const CACHE = "phangduang-" + VERSION;
@@ -61,9 +60,7 @@ self.addEventListener("install", event => {
         const res = await fetch(url, { cache: "reload" });
         if (!res.ok) throw new Error(res.status);
         await cache.put(url, res);
-      } catch (err) {
-        failed.push(url);
-      }
+      } catch { failed.push(url); }
     }));
     if (failed.length) console.warn("[sw] แคชไม่สำเร็จ", failed);
     await self.skipWaiting();
@@ -81,17 +78,14 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET") return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
+  if (new URL(req.url).origin !== self.location.origin) return;
 
-  /* การเปิดหน้าเว็บ: เสิร์ฟ index.html จากแคชเสมอ
+  /* การเปิดหน้าเว็บ: เสิร์ฟหน้าแรกจากแคชเสมอ
      ลิงก์ที่มี ?mode=kiosk จึงยังเปิดได้ตอนออฟไลน์ แม้ URL ไม่ตรงกับที่แคชไว้ */
   if (req.mode === "navigate") {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
-      return (await cache.match("./index.html"))
-          || (await cache.match("./"))
-          || fetch(req);
+      return (await cache.match("/")) || (await cache.match("/index.html")) || fetch(req);
     })());
     return;
   }
@@ -100,21 +94,18 @@ self.addEventListener("fetch", event => {
     const cache = await caches.open(CACHE);
     const hit = await cache.match(req, { ignoreSearch: true });
     if (hit) return hit;
-    try {
-      const res = await fetch(req);
-      if (res.ok && res.type === "basic") cache.put(req, res.clone());
-      return res;
-    } catch (err) {
-      /* ออฟไลน์และไม่มีในแคช — ปล่อยให้ผู้เรียกจัดการเอง ดีกว่าคืนหน้าผิดชนิด */
-      throw err;
-    }
+    const res = await fetch(req);
+    /* ไฟล์โมเดลก้อนใหญ่ถูกเก็บตรงนี้เอง หลังใช้ครั้งแรกก็ใช้ออฟไลน์ได้ */
+    if (res.ok && res.type === "basic") cache.put(req, res.clone());
+    return res;
   })());
 });
 `;
 
-writeFileSync(join(ROOT, "sw.js"), sw);
-const size = list => list.reduce((s, f) => s + statSync(join(ROOT, f)).size, 0);
-const core = files.filter(f => !isLazy(f));
+writeFileSync(join(OUT, "sw.js"), sw);
+
+const size = list => list.reduce((s, f) => s + statSync(join(OUT, f)).size, 0);
+const lazy = files.filter(isLazy);
 console.log(`sw.js รุ่น ${version}`);
 console.log(`  แคชตอนติดตั้ง : ${core.length} ไฟล์ · ${(size(core) / 1024).toFixed(0)} KB`);
-console.log(`  แคชตอนใช้จริง : ${lazyCount} ไฟล์ · ${(size(files.filter(isLazy)) / 1048576).toFixed(1)} MB (โมเดลนับนิ้ว)`);
+console.log(`  แคชตอนใช้จริง : ${lazy.length} ไฟล์ · ${(size(lazy) / 1048576).toFixed(1)} MB (โมเดลนับนิ้ว)`);

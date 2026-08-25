@@ -1,4 +1,4 @@
-import { PATHS, QUESTIONS, AXES, CEILING } from "../app/public/src/data.js";
+import { PATHS, QUESTIONS, AXES, CEILING } from "../src/lib/data.js";
 
 console.log("axes    :", AXES.join(" "));
 console.log("questions:", QUESTIONS.length, "| options per q:", QUESTIONS.map(q => q.options.length).join(","));
