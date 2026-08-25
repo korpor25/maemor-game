@@ -1,0 +1,19 @@
+ไอคอน 3D ในโฟลเดอร์นี้มาจาก Microsoft Fluent Emoji
+https://github.com/microsoft/fluentui-emoji
+
+MIT License · Copyright (c) Microsoft Corporation
+
+อนุญาตให้ใช้ ทำสำเนา แก้ไข รวมเข้ากับงานอื่น เผยแพร่ และแจกจ่ายได้
+โดยต้องแนบประกาศลิขสิทธิ์และประกาศอนุญาตนี้ไปกับสำเนาทุกชุด
+
+ซอฟต์แวร์นี้ให้มาตามสภาพ โดยไม่มีการรับประกันใด ๆ
+
+ไฟล์ในโฟลเดอร์นี้
+  dev.png  💻  Laptop
+  ux.png  🎨  Artist palette
+  ai.png  🤖  Robot
+  data.png  📊  Bar chart
+  net.png  🌐  Globe with meridians
+  sec.png  🛡️  Shield
+  game.png  🎮  Video game
+  biz.png  🚀  Rocket

@@ -59,6 +59,12 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 page.on("pageerror", e => console.log("  [หน้าเว็บ error]", String(e).slice(0, 300)));
 await page.setViewport(VIEW);
+/* headless Chrome ตอบ prefers-reduced-motion: reduce มาเป็นค่าตั้งต้น
+   แอปจึงปิดแอนิเมชันทุกอย่างและข้ามหน้ารอประมวลผลไปเลย ทำให้ถ่ายไม่ติด
+   บังคับให้ตอบเหมือนเครื่องผู้ใช้ทั่วไป */
+await page.emulateMediaFeatures([
+  { name: "prefers-reduced-motion", value: "no-preference" }
+]);
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -76,10 +82,14 @@ async function until(check, label, timeout = 25000, step = 300) {
 
 const text = async sel => page.$eval(sel, e => e.textContent).catch(() => null);
 const has = async sel => (await page.$(sel)) !== null;
-const shot = async name => {
-  await wait(1200);                       // ปล่อยให้แอนิเมชันและฉาก 3D เข้าที่ก่อน
+/* ถ่ายทันที ใช้กับฉากที่อยู่ไม่นานพอจะรอให้นิ่ง */
+const snap = async name => {
   await page.screenshot({ path: `${OUT}/${name}.png` });
   console.log(`  ถ่าย ${name}`);
+};
+const shot = async name => {
+  await wait(1200);                       // ปล่อยให้แอนิเมชันและฉาก 3D เข้าที่ก่อน
+  await snap(name);
 };
 
 await page.goto(base, { waitUntil: "networkidle2" });
@@ -91,17 +101,23 @@ await shot("1-intro");
    และการโหลดโมเดลสิบเก้าเมกะไบต์ทำให้รอนานโดยไม่ได้อะไรเพิ่มในภาพ */
 await page.evaluate(() => [...document.querySelectorAll("button")]
   .find(b => b.textContent.includes("เริ่มทำแบบสำรวจ"))?.click());
+await until(() => has(".tut"), "บทเรียนสอนเล่น");
+await wait(1600);                         // รอมือ 3D เรนเดอร์
+await shot("1b-tutorial");
+await page.evaluate(() => [...document.querySelectorAll("button")]
+  .find(b => b.textContent.includes("เข้าใจแล้ว"))?.click());
 await wait(500);
 /* ปิดกล้องแล้วรอจนม่านขึ้นจริง ไม่ใช่เดาเวลา
    ถ้ากล้องยังเดินอยู่ โมเดลนับนิ้วจะกินเธรดหลักจนการอัปเดตหน้าช้ากว่าที่รอไว้ */
-await page.evaluate(() => [...document.querySelectorAll("button")]
-  .find(b => b.textContent.startsWith("cam["))?.click());
-await until(() => has(".cam__veil"), "ม่านกล้อง");
+await page.evaluate(() => document.querySelector(".camtoggle.is-on")?.click());
+await until(() => has(".camtoggle:not(.is-on)"), "ปุ่มกล้องเปลี่ยนเป็นปิด");
+await wait(400);
 await shot("2-survey");
 
 /* รอให้เลขข้อเปลี่ยนจริงก่อนกดข้อถัดไป เชื่อถือได้กว่าเทียบข้อความโจทย์
    เพราะโจทย์อาจยาวจนถูกตัดต่างกันระหว่างเฟรม */
-for (let q = 0; q < 6; q++) {
+const TOTAL_Q = 7;
+for (let q = 0; q < TOTAL_Q; q++) {
   const before = await text(".survey__meta .code");
   const info = await page.evaluate(() => {
     const el = document.querySelector(".choice");
@@ -110,27 +126,39 @@ for (let q = 0; q < 6; q++) {
     return `มี ${document.querySelectorAll(".choice").length} ตัวเลือก`;
   });
   console.log(`  กด ${before} · ${info}`);
-  /* ข้อสุดท้ายมีหกตัวเลือก เป็นกรณีที่แน่นที่สุด ต้องเห็นว่ายังพอดีจอ */
-  if (q === 4) { await wait(500); await shot("2b-survey-6"); }
-  if (q < 5) {
+  /* เก็บข้อกลาง ๆ ไว้ดูอีกใบ ข้อความยาวไม่เท่ากันในแต่ละข้อ */
+  if (q === 4) { await wait(500); await shot("2b-survey-5"); }
+  if (q < TOTAL_Q - 1) {
     await until(async () => (await text(".survey__meta .code")) !== before, `ข้อ ${q + 2}`);
     /* pick() ในแอปมีตัวกันการกดซ้ำ 240 มิลลิวินาที เพื่อไม่ให้ท่ามือเดียวถูกนับสองครั้ง
        ถ้ากดข้อถัดไปเร็วกว่านั้น คลิกจะถูกทิ้งเงียบ ๆ แล้วสคริปต์จะค้างรอตลอดไป */
     await wait(350);
   }
 }
+/* หน้ารอประมวลผลอยู่ได้ราวสองวินาทีครึ่งแล้วไปต่อเอง ต้องเก็บให้ทันในช่วงนั้น */
+/* หน้ารอประมวลผลอยู่แค่ราวสองวินาทีครึ่ง ถ้ารอให้นิ่งก่อนถ่ายจะไปโผล่หน้าผลแทน */
+/* หน้ารอมีอายุแค่ราวสองวินาทีครึ่ง ถ่ายทันทีที่เจอ ไม่หน่วงอะไรทั้งนั้น
+   ตัว page.screenshot เองก็กินเวลาอยู่แล้ว ถ้าหน่วงเพิ่มจะไปโผล่หน้าผลแทน */
+await until(() => has(".cast"), "หน้ารอประมวลผล", 8000, 25);
+await snap("2c-loading");
+
 await until(() => has(".result"), "หน้าผลลัพธ์");
 await shot("3-result");
 
-await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
-await shot("4-result-bottom");
+await page.evaluate(() => [...document.querySelectorAll("button")]
+  .find(b => b.textContent.trim() === "อ่านรายละเอียด")?.click());
+await until(() => has(".sheet"), "แผ่นรายละเอียด");
+await wait(450);
+await shot("4-detail");
+await page.evaluate(() => document.querySelector(".sheet .iconbtn")?.click());
+await wait(350);
 
 await page.evaluate(() => [...document.querySelectorAll("button")]
-  .find(b => b.textContent.includes("สายอาชีพทั้ง 6"))?.click());
+  .find(b => b.textContent.includes("สายอาชีพทั้ง 8") || b.textContent.includes("ดูทั้ง 8 สาย"))?.click());
 await shot("5-paths");
 
 await page.evaluate(() => [...document.querySelectorAll("button")]
-  .find(b => b.textContent.trim() === "log")?.click());
+  .find(b => b.textContent.trim() === "บันทึก")?.click());
 await shot("6-panel");
 
 await page.evaluate(() => {

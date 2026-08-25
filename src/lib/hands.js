@@ -151,8 +151,9 @@ export class HandCounter {
           delegate: "GPU"
         },
         runningMode: "VIDEO",
-        /* รับสองมือ เพราะบางข้อมีหกตัวเลือก ซึ่งต้องชูห้านิ้วบวกอีกหนึ่ง */
-        numHands: 2,
+        /* มือเดียวพอ เพราะทุกข้อมีไม่เกินห้าตัวเลือก
+           รับมือเดียวยังเร็วกว่า และตัดโอกาสที่มือของคนที่เดินผ่านจะถูกนับรวมเข้ามา */
+        numHands: 1,
         minHandDetectionConfidence: 0.5,
         minHandPresenceConfidence: 0.5,
         minTrackingConfidence: 0.5

@@ -4,7 +4,7 @@
 
    เรนเดอร์ด้วย Chrome ที่ติดตั้งอยู่แล้วผ่าน --print-to-pdf จึงไม่ต้องลง puppeteer
    ฟอนต์ถูกฝังเป็น data URI เพราะ Chrome ปฏิเสธการโหลดฟอนต์ข้ามไฟล์เมื่อเปิดผ่าน file:// */
-import { PATHS, QUESTIONS, AXES, CEILING } from "../src/lib/data.js";
+import { PATHS, QUESTIONS, AXES, BAR } from "../src/lib/data.js";
 import { pointAt, polygonOf, PLATE } from "../src/lib/plate.js";
 import { HAND_BONES, readFingers } from "../src/lib/hands.js";
 import { makeHand, POSES } from "../src/lib/handPoses.js";
@@ -44,11 +44,8 @@ const fontFaces = FONTS.flatMap(([family, weight, files]) =>
    ใช้ pointAt / polygonOf ตัวเดียวกับที่แอปใช้วาดบนหน้าจอ */
 const { SIZE, C, R, R_LABEL, PAD } = PLATE;
 
-function plateSvg(values, { labels = false, lead = -1, frame = true } = {}) {
+function plateSvg(values, { labels = false, lead = -1 } = {}) {
   const parts = [];
-  if (frame) {
-    parts.push(`<rect x="${PAD}" y="${PAD}" width="${SIZE - PAD * 2}" height="${SIZE - PAD * 2}" fill="none" stroke="${RULE}"/>`);
-  }
   for (const step of [0.25, 0.5, 0.75, 1]) {
     parts.push(`<polygon points="${polygonOf(new Array(N).fill(step), N)}" fill="none" stroke="${RULE}" stroke-width="0.8"/>`);
   }
@@ -74,7 +71,7 @@ function plateSvg(values, { labels = false, lead = -1, frame = true } = {}) {
 const glyphSvg = axisIndex => {
   const values = new Array(N).fill(0.26);
   values[axisIndex] = 1;
-  return plateSvg(values, { lead: axisIndex, frame: false });
+  return plateSvg(values, { lead: axisIndex });
 };
 
 /* วาดโครงมือจากพิกัดชุดเดียวกับที่ build/test-fingers.mjs ใช้ตรวจ
@@ -101,13 +98,13 @@ function handSvg(up) {
 /* ---------- ตัวอย่างผลลัพธ์บนหน้าอธิบาย ----------
    คำนวณจากการตอบจริงชุดหนึ่ง ไม่ได้ตั้งตัวเลขขึ้นมาเอง
    ตัวเลขในคู่มือจึงเป็นตัวเลขที่ผู้ตอบมีโอกาสเห็นจริง */
-const sampleAnswers = [1, 2, 2, 4, 4, 5];
+const sampleAnswers = [1, 0, 0, 0, 1, 0, 0];   /* หนึ่งชุดคำตอบ ยาวเท่าจำนวนคำถามเสมอ */
 const sampleScores = Object.fromEntries(AXES.map(k => [k, 0]));
 QUESTIONS.forEach((q, i) => {
-  const opt = q.options[Math.min(sampleAnswers[i], q.options.length - 1)];
+  const opt = q.options[Math.min(sampleAnswers[i] ?? 0, q.options.length - 1)];
   for (const k in opt.score) sampleScores[k] += opt.score[k];
 });
-const sampleValues = AXES.map(k => sampleScores[k] / CEILING[k]);
+const sampleValues = AXES.map(k => Math.min(1, sampleScores[k] / BAR[k]));
 const sampleLead = sampleValues.indexOf(Math.max(...sampleValues));
 
 /* ---------- ส่วนประกอบของเอกสาร ---------- */
@@ -152,7 +149,7 @@ const p1 = `
   ${step(1, "สแกน QR แล้วอนุญาตให้ใช้กล้อง", "เปิดกล้องมือถือส่องที่ป้าย QR แตะลิงก์ที่ขึ้นมา แล้วกดอนุญาตเมื่อเบราว์เซอร์ถามหากล้อง ไม่ต้องติดตั้งแอปและไม่ต้องสมัครอะไร")}
   ${step(2, "ชูนิ้วให้ตรงกับหมายเลขคำตอบ", "ยกมือขึ้นหน้ากล้อง ชูนิ้วเท่ากับหมายเลขของคำตอบที่ต้องการ ตัวเลขที่ระบบอ่านได้จะขึ้นกลางจอทันที")}
   ${step(3, "ค้างไว้จนวงแหวนเต็ม", "ถือท่าเดิมนิ่งไว้ราวหนึ่งวินาที วงแหวนรอบตัวเลขจะไล่จนครบรอบแล้วจึงนับว่าเลือก ถ้าเลขยังไม่ตรงก็เปลี่ยนท่าได้ทันที ยังไม่ถือว่าตอบ")}
-  ${step(4, "อ่านผล", "ตอบครบหกข้อแล้วระบบจะสรุปว่าคุณเอนไปทางสายงานใดมากที่สุด พร้อมคะแนนรายแกน อาชีพตัวอย่าง และวิชาที่จะได้เรียนจริงในหลักสูตร")}
+  ${step(4, "อ่านผล", "ตอบครบเจ็ดข้อแล้วระบบจะสรุปว่าคุณเอนไปทางสายงานใดมากที่สุด พร้อมคะแนนรายแกน อาชีพตัวอย่าง และวิชาที่จะได้เรียนจริงในหลักสูตร")}
 </ol>
 
 <h2 class="h2">ท่ามือของแต่ละหมายเลข</h2>
@@ -162,13 +159,9 @@ ${POSES.map(pose => `
     <div class="pose__art">${handSvg(pose.up)}</div>
     <figcaption><b>${pose.count}</b><span>${esc(pose.label)}</span></figcaption>
   </figure>`).join("")}
-  <figure class="pose">
-    <div class="pose__art pose__art--pair">${handSvg([true, true, true, true, true])}${handSvg([false, true, false, false, false])}</div>
-    <figcaption><b>6</b><span>สองมือรวมกัน</span></figcaption>
-  </figure>
 </div>
-<p class="fine">ระบบนับนิ้วที่เหยียดทั้งหมด ไม่สนใจว่าเป็นนิ้วไหนหรือมือข้างใด ชู 3 นิ้วแบบใดก็ได้ผลเท่ากัน
-มีเพียงข้อสุดท้ายที่มีหกตัวเลือก จึงต้องใช้สองมือ</p>
+<p class="fine">ระบบนับนิ้วที่เหยียดทั้งหมด ไม่สนใจว่าเป็นนิ้วไหน ชู 3 นิ้วแบบใดก็ได้ผลเท่ากัน
+ทุกข้อมีไม่เกินห้าตัวเลือก จึงใช้มือเดียวตลอด</p>
 
 <ul class="facts">
   <li>เลือกคำตอบด้วยการชูนิ้ว</li>
@@ -185,13 +178,13 @@ const p2 = `
     <p class="cap">ตัวอย่างผังดวงจากการตอบจริงชุดหนึ่ง</p>
   </div>
   <div class="split__body">
-    <p>ผังดวงมีหกแกน แต่ละแกนคือความสนใจด้านหนึ่งของงานไอที ยิ่งจุดบนแกนใดอยู่ห่างจากศูนย์กลาง แปลว่าคำตอบของคุณเอนไปทางนั้นมาก</p>
+    <p>ผังดวงมีแปดแกน แต่ละแกนคือความสนใจด้านหนึ่งของงานดิจิทัล ยิ่งจุดบนแกนใดอยู่ห่างจากศูนย์กลาง แปลว่าคำตอบของคุณเอนไปทางนั้นมาก</p>
     <p><b>จุดสีแดงคือแกนที่เด่นที่สุด</b> และเป็นตัวกำหนดชื่อผลลัพธ์ที่ได้</p>
     <p>รูปที่กว้างเท่ากันเกือบทุกด้านไม่ใช่เรื่องผิด แปลว่าคุณสนใจหลายด้านใกล้เคียงกัน ซึ่งพบได้บ่อยในผู้ที่ยังไม่เคยลองงานสายนี้มาก่อน</p>
   </div>
 </div>
 
-<h2 class="h2">หกแกนคืออะไร</h2>
+<h2 class="h2">แปดแกนคืออะไร</h2>
 <table class="axes">
 ${AXES.map(k => `<tr><th>${esc(PATHS[k].axis)}</th><td>${esc(PATHS[k].tagline)}</td></tr>`).join("")}
 </table>
@@ -208,9 +201,9 @@ ${AXES.map(k => `<tr><th>${esc(PATHS[k].axis)}</th><td>${esc(PATHS[k].tagline)}<
   ความสนใจเปลี่ยนได้เมื่อได้ลองทำจริง และทุกสายในผังดวงนี้เรียนได้ในหลักสูตรเดียวกัน</p>
 </div>`;
 
-/* ---------- หน้า 3: หกสายอาชีพ ---------- */
+/* ---------- หน้า 3: แปดสายอาชีพ ---------- */
 const p3 = `
-<h2 class="h2">สายอาชีพทั้ง 6 แกน</h2>
+<h2 class="h2">สายอาชีพทั้ง 8 แกน</h2>
 <p class="body">แต่ละตราคือผังดวงอันเดียวกัน ที่ยื่นออกเพียงแกนเดียว</p>
 <div class="cards">
 ${AXES.map((k, i) => {
@@ -264,7 +257,7 @@ ${kv([
 
 <h3 class="h3">แผงบันทึกผู้เข้าร่วม</h3>
 <p class="body">กดปุ่ม <b>บันทึกผู้เข้าร่วม</b> ด้านล่างสุดของหน้า หรือกดปุ่ม <b>L</b>
-แผงจะแสดงยอดวันนี้ ยอดรวม เวลาเฉลี่ยต่อคน ผลที่พบบ่อยที่สุด และการกระจายของผลลัพธ์ทั้งหกสาย
+แผงจะแสดงยอดวันนี้ ยอดรวม เวลาเฉลี่ยต่อคน ผลที่พบบ่อยที่สุด และการกระจายของผลลัพธ์ทั้งแปดสาย
 กด <b>ดาวน์โหลด CSV</b> เพื่อเอาไปทำรายงานต่อ ไฟล์เปิดใน Excel ได้โดยภาษาไทยไม่เพี้ยน</p>
 <div class="note">
   <b class="note__t">ข้อมูลผูกกับเครื่องและเบราว์เซอร์นั้น</b>
@@ -288,8 +281,8 @@ const trouble = [
   ["ตัวเลขกระพริบไปมา เลือกไม่ติดสักที",
    "มืออยู่ใกล้ขอบภาพหรือใกล้กล้องเกินไป ทำให้โมเดลจับ ๆ หลุด ๆ",
    "ถอยห่างจากกล้องให้เห็นทั้งฝ่ามือและข้อมือในกรอบ แล้วถือนิ่ง ระบบจะรอจนท่าเดิมค้างครบจึงนับ"],
-  ["ระบบนับนิ้วของคนที่เดินผ่านด้วย",
-   "มีมือมากกว่าหนึ่งคู่อยู่ในกรอบภาพ ระบบรับได้สองมือและนับรวมกันเพื่อรองรับข้อที่มีหกตัวเลือก",
+  ["ระบบไปจับมือของคนที่เดินผ่าน",
+   "ระบบเลือกมือที่ชัดที่สุดในกรอบภาพเพียงมือเดียว ถ้ามือคนอื่นเด่นกว่าก็จะถูกเลือกแทน",
    "ตั้งฉากกั้นหรือหมุนกล้องไม่ให้ทางเดินอยู่ในกรอบ และบอกผู้เล่นให้ยืนตรงกลางหน้าจอ"],
   ["อินเทอร์เน็ตหลุดกลางงาน",
    "แอปเก็บไฟล์ไว้ในเครื่องตั้งแต่เปิดครั้งแรกอยู่แล้ว รวมถึงไฟล์โมเดลหลังใช้กล้องไปแล้วหนึ่งครั้ง",
@@ -323,7 +316,7 @@ const p6 = `
 
 <table class="ceil">
   <tr><th>แกน</th>${AXES.map(k => `<td>${esc(PATHS[k].axis)}</td>`).join("")}</tr>
-  <tr><th>คะแนนเต็ม</th>${AXES.map(k => `<td class="mono">${CEILING[k]}</td>`).join("")}</tr>
+  <tr><th>คะแนนเต็ม</th>${AXES.map(k => `<td class="mono">${BAR[k]}</td>`).join("")}</tr>
 </table>
 <p class="fine">คะแนนเต็มไม่เท่ากันโดยธรรมชาติของคำถาม ระบบจึงหารด้วยคะแนนเต็มของแกนนั้นก่อนจัดอันดับเสมอ</p>
 
@@ -391,7 +384,7 @@ ul,ol{list-style:none}
 .step__t{display:block;font-size:11pt;font-weight:600;line-height:1.4}
 .step__d{color:${INK_SOFT};font-size:9.8pt}
 
-.poses{display:grid;grid-template-columns:repeat(6,1fr);gap:2.5mm;margin-bottom:2mm}
+.poses{display:grid;grid-template-columns:repeat(5,1fr);gap:2.5mm;margin-bottom:2mm}
 .pose{border:.5pt solid ${RULE};border-radius:2mm;padding:2mm 1mm;text-align:center}
 .pose__art{height:19mm;display:flex;align-items:center;justify-content:center;gap:.5mm}
 .pose__art svg{height:100%;width:auto}
@@ -467,7 +460,7 @@ const html = `<!DOCTYPE html>
 <style>${css}</style></head><body>
 ${page(1, "วิธีเล่น", p1)}
 ${page(2, "อ่านผลอย่างไร", p2)}
-${page(3, "สายอาชีพทั้ง 6", p3)}
+${page(3, "สายอาชีพทั้ง 8", p3)}
 ${page(4, "สำหรับเจ้าหน้าที่บูธ", p4)}
 ${page(5, "แก้ปัญหาเฉพาะหน้า", p5)}
 <section class="page page--flow">

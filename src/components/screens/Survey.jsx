@@ -13,6 +13,7 @@
 
 import { QUESTIONS } from "@/lib/data";
 import CameraStage from "@/components/CameraStage";
+import Icon from "@/components/Icon";
 
 export default function Survey({
   qi, aim, camOn, onToggleCam, onPick, onBack, onAim
@@ -61,7 +62,15 @@ export default function Survey({
           ))}
         </div>
         <div className="survey__tools">
-          <button className="sw" onClick={onToggleCam}>cam[<b>{camOn ? "on" : "off"}</b>]</button>
+          <button
+            className={`camtoggle${camOn ? " is-on" : ""}`}
+            onClick={onToggleCam}
+            aria-pressed={camOn}
+            title={camOn ? "ปิดกล้องแล้วตอบด้วยการแตะ" : "เปิดกล้องเพื่อตอบด้วยการชูนิ้ว"}
+          >
+            <Icon name={camOn ? "cam" : "camoff"} />
+            {camOn ? "ปิดกล้อง" : "เปิดกล้อง"}
+          </button>
           {qi > 0 && <button className="btn-link" onClick={onBack}>ย้อนกลับ</button>}
         </div>
       </div>

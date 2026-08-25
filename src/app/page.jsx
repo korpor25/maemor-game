@@ -10,13 +10,15 @@ import dynamic from "next/dynamic";
 import { PATHS, QUESTIONS, AXES } from "@/lib/data";
 import { tally, rank, normalise } from "@/lib/score";
 import { appendLog } from "@/lib/stats";
-import { GridOverlay, Cursor, Telemetry } from "@/components/Chrome";
+import { GridOverlay, Cursor } from "@/components/Chrome";
 import Intro from "@/components/screens/Intro";
 import Survey from "@/components/screens/Survey";
 import Cast from "@/components/screens/Cast";
 import Result from "@/components/screens/Result";
 import Paths from "@/components/screens/Paths";
 import Panel from "@/components/Panel";
+import Tutorial from "@/components/Tutorial";
+import Icon from "@/components/Icon";
 
 /* ฉาก 3D ใช้ WebGL จึงต้องรันฝั่งเบราว์เซอร์เท่านั้น
    และโหลดแยกก้อน เพื่อไม่ให้ไปถ่วงการแสดงตัวอักษรครั้งแรก */
@@ -24,6 +26,7 @@ const Scene3D = dynamic(() => import("@/components/Scene3D"), { ssr: false });
 
 const AXIS_LABELS = AXES.map(k => PATHS[k].axis);
 const PREFS = "phangduang.prefs.v2";
+const TUT_SEEN = "phangduang.tutorial.v1";
 
 export default function Page() {
   const [screen, setScreen] = useState("intro");
@@ -32,6 +35,7 @@ export default function Page() {
   const [mode, setMode] = useState("phone");
   const [camOn, setCamOn] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [tutOpen, setTutOpen] = useState(false);
   const [aim, setAim] = useState(0);
   const [online, setOnline] = useState(true);
   const [ready3D, setReady3D] = useState(false);
@@ -51,6 +55,7 @@ export default function Page() {
     const url = new URLSearchParams(location.search);
     setTheme(url.get("theme") || saved.theme || "day");
     setMode(url.get("mode") || saved.mode || "phone");
+    if (saved.camOn === false) setCamOn(false);
     /* รอให้ตัวอักษรและเนื้อหาขึ้นก่อน แล้วค่อยเริ่มฉาก 3D
        ผู้ที่สแกน QR มาจะได้อ่านได้ทันทีโดยไม่ต้องรอ WebGL */
     const t = setTimeout(() => setReady3D(true), 400);
@@ -66,8 +71,8 @@ export default function Page() {
     document.documentElement.dataset.mode = mode;
     document.querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", theme === "night" ? "#070A11" : "#BDD8EF");
-    try { localStorage.setItem(PREFS, JSON.stringify({ theme, mode })); } catch { /* ไม่สำคัญพอจะขวางผู้เล่น */ }
-  }, [theme, mode]);
+    try { localStorage.setItem(PREFS, JSON.stringify({ theme, mode, camOn })); } catch { /* ไม่สำคัญพอจะขวางผู้เล่น */ }
+  }, [theme, mode, camOn]);
 
   useEffect(() => {
     const sync = () => setOnline(navigator.onLine);
@@ -95,7 +100,17 @@ export default function Page() {
   const start = useCallback(() => {
     setAnswers([]); setAim(0);
     startedAt.current = Date.now();
+    /* ครั้งแรกของเครื่องนี้ให้ดูวิธีเล่นก่อน ครั้งต่อไปเข้าเล่นได้เลย
+       ที่บูธมีคนต่อคิว การบังคับดูซ้ำทุกรอบจะทำให้คิวเดินช้า */
+    let seen = false;
+    try { seen = localStorage.getItem(TUT_SEEN) === "1"; } catch { /* ถือว่ายังไม่เคยดู */ }
+    if (!seen) setTutOpen(true);
     setScreen("survey");
+  }, []);
+
+  const closeTutorial = useCallback(() => {
+    setTutOpen(false);
+    try { localStorage.setItem(TUT_SEEN, "1"); } catch { /* ไม่สำคัญพอจะขวางผู้เล่น */ }
   }, []);
 
   const pick = useCallback(index => {
@@ -136,11 +151,13 @@ export default function Page() {
   useEffect(() => {
     const onKey = e => {
       if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (tutOpen) return;                       // บทเรียนจัดการปุ่ม Escape ของตัวเอง
       if (panelOpen) { if (e.code === "Escape") setPanelOpen(false); return; }
       if (e.code === "KeyL") { setPanelOpen(true); return; }
+      if (e.code === "KeyC") { setCamOn(v => !v); return; }
       if (e.code === "Escape" && screen !== "intro") { restart(); return; }
       if (screen === "survey") {
-        const m = /^(?:Digit|Numpad)([1-6])$/.exec(e.code);
+        const m = /^(?:Digit|Numpad)([1-5])$/.exec(e.code);
         if (m) { pick(+m[1] - 1); return; }
         if (e.code === "Backspace") { e.preventDefault(); back(); }
       }
@@ -148,7 +165,7 @@ export default function Page() {
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [screen, panelOpen, pick, back, restart, finishCast]);
+  }, [screen, panelOpen, tutOpen, pick, back, restart, finishCast]);
 
   /* ---------- กลับหน้าแรกเองเมื่อไม่มีคนเล่นต่อ (เฉพาะโหมดบูธ) ---------- */
   useEffect(() => {
@@ -160,9 +177,10 @@ export default function Page() {
     return () => { clearTimeout(id); removeEventListener("pointerdown", poke); };
   }, [screen, mode, restart]);
 
-  /* ฉาก 3D กินการ์ดจอมาก จึงหยุดตอนอยู่หน้าคำถาม
-     เพราะกล้องกับโมเดลนับนิ้วต้องการทรัพยากรทั้งหมดในจังหวะนั้น */
-  const show3D = ready3D && screen !== "survey";
+  /* ฉาก 3D ขึ้นเฉพาะตอนประมวลผล ซึ่งเป็นจังหวะเดียวที่ไม่มีอะไรให้อ่าน
+     หน้าอื่นวัตถุลอยไปแย่งสายตาจากเนื้อหา และหน้าคำถามต้องการการ์ดจอไปให้กล้อง
+     ผลพลอยได้: three.js ไม่ถูกดึงมาตอนเปิดครั้งแรก คนที่สแกน QR มาจึงโหลดเบา */
+  const show3D = ready3D && screen === "cast";
 
   return (
     <>
@@ -172,27 +190,65 @@ export default function Page() {
 
       <div className="app">
         <header className="bar">
-          <span className="brand">
+          <button className="brand" onClick={restart} aria-label="กลับหน้าแรก" title="กลับหน้าแรก">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="1.5" y="1.5" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1" />
               <polygon points="12,4.5 18.5,8.25 18.5,15.75 12,19.5 5.5,15.75 5.5,8.25"
                        fill="none" stroke="currentColor" strokeWidth="1.4" />
               <circle cx="12" cy="12" r="2" fill="currentColor" />
             </svg>
-            ผังดวงอาชีพ
-          </span>
-          <span className="bar__gap" />
-          <button className="sw" onClick={() => setTheme(t => (t === "night" ? "day" : "night"))}>
-            theme[<b>{theme === "night" ? "night" : "day"}</b>]
+            <span className="brand__text">ผังดวงอาชีพ</span>
           </button>
-          <button className="sw" onClick={() => setMode(m => (m === "kiosk" ? "phone" : "kiosk"))}>
-            booth[<b>{mode === "kiosk" ? "on" : "off"}</b>]
+          <span className="bar__gap" />
+
+          {/* ปุ่มบนแถบใช้ไอคอนนำ แล้วมีคำกำกับบนจอกว้าง
+              ไอคอนอย่างเดียวบนจอแคบยังเดาออกเพราะเป็นสัญลักษณ์ที่คุ้นกันทั่วไป */}
+          <button className="navbtn" onClick={() => setTutOpen(true)} title="วิธีเล่น">
+            <Icon name="help" /><span className="navbtn__t">วิธีเล่น</span>
+          </button>
+
+          <button
+            className="navbtn"
+            onClick={() => setTheme(t => (t === "night" ? "day" : "night"))}
+            title={theme === "night" ? "เปลี่ยนเป็นโหมดกลางวัน" : "เปลี่ยนเป็นโหมดกลางคืน"}
+          >
+            <Icon name={theme === "night" ? "sun" : "moon"} />
+            <span className="navbtn__t">{theme === "night" ? "กลางวัน" : "กลางคืน"}</span>
+          </button>
+
+          {/* เปิดปิดกล้องได้จากทุกหน้า ไม่ต้องรอเข้าไปถึงหน้าคำถามก่อน
+              บางคนไม่สะดวกให้กล้องทำงาน จะได้ปิดไว้ตั้งแต่ยังไม่เริ่มเล่น
+
+              เน้นสีตอน "ปิด" ไม่ใช่ตอน "เปิด" เพราะเปิดคือค่าปกติของเกมนี้
+              ถ้าเน้นตอนเปิด ปุ่มจะสว่างค้างอยู่ทุกหน้าโดยไม่ได้บอกอะไรใหม่ */}
+          <button
+            className={`navbtn${camOn ? "" : " is-off"}`}
+            onClick={() => setCamOn(v => !v)}
+            title={camOn ? "ปิดกล้อง แล้วตอบด้วยการแตะ" : "เปิดกล้อง เพื่อตอบด้วยการชูนิ้ว"}
+            aria-pressed={camOn}
+          >
+            <Icon name={camOn ? "cam" : "camoff"} /><span className="navbtn__t">กล้อง</span>
+          </button>
+
+          <button
+            className={`navbtn${mode === "kiosk" ? " is-on" : ""}`}
+            onClick={() => setMode(m => (m === "kiosk" ? "phone" : "kiosk"))}
+            title={mode === "kiosk" ? "ออกจากโหมดบูธ" : "เข้าโหมดบูธ"}
+            aria-pressed={mode === "kiosk"}
+          >
+            <Icon name="booth" /><span className="navbtn__t">โหมดบูธ</span>
+          </button>
+
+          {!online && <span className="code bar__net">offline</span>}
+
+          <button className="navbtn" onClick={() => setPanelOpen(true)} title="บันทึกผู้เข้าร่วม">
+            <Icon name="log" /><span className="navbtn__t">บันทึก</span>
           </button>
         </header>
 
         <main className="main">
           {screen === "intro" && (
-            <Intro values={values} labels={AXIS_LABELS} onStart={start} onPaths={() => setScreen("paths")} />
+            <Intro labels={AXIS_LABELS} onStart={start} onPaths={() => setScreen("paths")} />
           )}
           {screen === "survey" && (
             <Survey
@@ -216,13 +272,10 @@ export default function Page() {
           )}
         </main>
 
-        <Telemetry>
-          <span className="code">{online ? "offline ready" : "offline"}</span>
-          <button className="btn-link" onClick={() => setPanelOpen(true)}>log</button>
-        </Telemetry>
       </div>
 
       {panelOpen && <Panel onClose={() => setPanelOpen(false)} />}
+      {tutOpen && <Tutorial onClose={closeTutorial} />}
     </>
   );
 }

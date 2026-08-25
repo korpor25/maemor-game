@@ -107,37 +107,3 @@ export function Cursor() {
     </div>
   );
 }
-
-/* ------------------------------------------------------------
-   แถบข้อมูลสถานะล่าง — นาฬิกาที่เดินจริงกับพิกัดเมาส์
-   ตัวเลขที่ขยับตลอดทำให้หน้ารู้สึกเป็นเครื่องมือที่ทำงานอยู่ ไม่ใช่ภาพนิ่ง
-   ------------------------------------------------------------ */
-export function Telemetry({ children }) {
-  const [clock, setClock] = useState("");
-  const [xy, setXY] = useState("0000 X 0000 Y");
-
-  useEffect(() => {
-    const two = n => String(n).padStart(2, "0");
-    const tick = () => {
-      const d = new Date();
-      /* บอกเขตเวลาไว้ด้วย เครื่องบูธกับมือถือผู้เล่นอาจตั้งเวลาต่างกัน
-         เจ้าหน้าที่จะได้รู้ว่าเวลาที่บันทึกอ้างอิงจากอะไร */
-      const off = -d.getTimezoneOffset() / 60;
-      setClock(`GMT${off >= 0 ? "+" : "−"}${Math.abs(off)} ${two(d.getHours())}:${two(d.getMinutes())}:${two(d.getSeconds())}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    const move = e =>
-      setXY(`${String(Math.round(e.clientX)).padStart(4, "0")} X ${String(Math.round(e.clientY)).padStart(4, "0")} Y`);
-    addEventListener("pointermove", move, { passive: true });
-    return () => { clearInterval(id); removeEventListener("pointermove", move); };
-  }, []);
-
-  return (
-    <footer className="tele">
-      <span className="code">{clock}</span>
-      <span className="code tele__mid">{xy}</span>
-      <span className="tele__end">{children}</span>
-    </footer>
-  );
-}

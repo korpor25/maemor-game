@@ -1,13 +1,14 @@
 /* การให้คะแนนทั้งหมดของแบบสำรวจ แยกออกมาเป็นฟังก์ชันบริสุทธิ์
    จึงทดสอบได้โดยไม่ต้องมี React หรือเบราว์เซอร์ */
 
-import { AXES, CEILING, QUESTIONS } from "./data.js";
+import { AXES, BAR, QUESTIONS } from "./data.js";
 
 export const emptyScores = () => Object.fromEntries(AXES.map(k => [k, 0]));
 
-/* normalize ด้วยเพดานของแต่ละแกนก่อนเสมอ ทุกแกนจึงแข่งบนสเกลเดียวกัน
-   ถ้าไม่ทำ แกนที่ปรากฏในตัวเลือกบ่อยกว่าจะได้เปรียบโดยอัตโนมัติ */
-export const normalise = scores => AXES.map(k => scores[k] / CEILING[k]);
+/* normalize ด้วยเกณฑ์ของแต่ละแกนก่อนเสมอ ทุกแกนจึงแข่งบนสเกลเดียวกัน
+   ถ้าไม่ทำ แกนที่ปรากฏในตัวเลือกบ่อยกว่าจะได้เปรียบโดยอัตโนมัติ
+   เกณฑ์คือคะแนนเต็มคูณตัวถ่วงที่คาลิเบรตไว้ ดูคำอธิบายใน data.js */
+export const normalise = scores => AXES.map(k => Math.min(1, scores[k] / BAR[k]));
 
 /** รวมคะแนนจากคำตอบที่เลือกไว้ พร้อมจำว่าแต่ละแกนได้คะแนนครั้งล่าสุดที่ข้อไหน */
 export function tally(answers) {
@@ -27,7 +28,7 @@ export function tally(answers) {
 /** เรียงแกนจากเด่นสุดไปน้อยสุด */
 export function rank({ scores, lastGain }) {
   return AXES.slice().sort((a, b) => {
-    const d = scores[b] / CEILING[b] - scores[a] / CEILING[a];
+    const d = scores[b] / BAR[b] - scores[a] / BAR[a];
     if (Math.abs(d) > 1e-9) return d;
     /* คะแนนเท่ากัน — ให้แกนที่ได้คะแนนจากข้อท้าย ๆ ชนะ
        คำถามท้ายถามเรื่องคุณค่าและลักษณะงาน ซึ่งบ่งชี้ความตั้งใจมากกว่าข้อต้น
@@ -36,4 +37,4 @@ export function rank({ scores, lastGain }) {
   });
 }
 
-export const percent = (scores, key) => Math.round((scores[key] / CEILING[key]) * 100);
+export const percent = (scores, key) => Math.min(100, Math.round((scores[key] / BAR[key]) * 100));

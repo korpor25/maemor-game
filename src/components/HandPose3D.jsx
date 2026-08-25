@@ -3,77 +3,111 @@
 /* ============================================================
    มือ 3D มันวาวที่สลับท่าไปทีละหมายเลข
 
-   ขึ้นรูปจากพิกัดข้อต่อ 21 จุดชุดเดียวกับที่ build/test-fingers.mjs ใช้ตรวจ
-   ท่าที่เห็นในบทเรียนจึงเป็นท่าที่ระบบนับได้จริง
-   ไม่ใช่ไอคอนที่วาดขึ้นเองแล้วหวังว่าจะตรงกับสิ่งที่โมเดลอ่าน
-
-   ใช้แคนวาสเดียวและให้มือค่อย ๆ เปลี่ยนท่าไปเรื่อย ๆ
-   แทนการวางไอคอนหกอันเรียงกัน ซึ่งจะต้องเปิด WebGL หกตัวพร้อมกัน
+   บทเรียนจากรอบก่อน: เอาพิกัดข้อต่อที่สร้างไว้สำหรับทดสอบตรรกะการนับ
+   มาขึ้นรูปตรง ๆ แล้วอ่านไม่ออกว่าเป็นมือ เพราะสองเรื่อง
+     · พิกัดชุดนั้นวางนิ้วชิดกันเกินจริง (ห่างกันแค่ 0.06 ของความกว้างภาพ)
+       เพราะมันมีหน้าที่แค่ทดสอบมุมข้อต่อ ไม่ได้มีหน้าที่ดูเหมือนมือ
+     · ไม่มีฝ่ามือเลย มีแต่ก้านกับลูกกลมตามข้อต่อ
+   รอบนี้จึงถ่างนิ้วให้ได้สัดส่วนจริงและใส่ฝ่ามือเป็นก้อนเดียว
+   ส่วนสถานะเหยียด/งอ ยังมาจากชุดเดิม ท่าที่เห็นจึงยังเป็นท่าที่ระบบนับได้จริง
    ============================================================ */
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
 import { useMemo, useRef, useState, Suspense, useEffect } from "react";
 import * as THREE from "three";
 import { makeHand, POSES } from "@/lib/handPoses";
-import { HAND_BONES } from "@/lib/hands";
 
-/* พิกัดจาก makeHand อยู่ในช่วง 0–1 โดยแกน y ชี้ลงแบบภาพ
-   ต้องย้ายจุดกึ่งกลางไปที่ศูนย์และกลับแกน y ให้ตรงกับระบบของ three.js */
+/* ถ่างนิ้วออกจากกันให้ได้สัดส่วนของมือจริง
+   ฝ่ามือคนกว้างพอ ๆ กับความยาวจากข้อมือถึงโคนนิ้ว */
+const SPREAD_X = 3.4;
+const SCALE_Y = 2.1;
+
 const toWorld = lm => lm.map(p => new THREE.Vector3(
-  (p.x - 0.5) * 3.2,
-  (0.62 - p.y) * 3.2,
+  (p.x - 0.5) * SPREAD_X,
+  (0.68 - p.y) * SCALE_Y,
   0
 ));
 
 const POSE_POINTS = POSES.map(pose => toWorld(makeHand(pose.up)));
 
-/* กระดูกหนึ่งท่อน — ทรงกระบอกที่ยืดและหมุนให้พาดระหว่างข้อต่อสองจุด
-   ใช้ mesh เดียวต่อกระดูก แล้วขยับทุกเฟรมตอนเปลี่ยนท่า */
-function Bone({ from, to, radius }) {
+/* นิ้วห้านิ้ว แต่ละนิ้วคือข้อต่อสี่จุดเรียงกัน
+   นิ้วโป้งอ้วนกว่าและสั้นกว่านิ้วอื่นตามธรรมชาติ */
+const FINGERS = [
+  { joints: [1, 2, 3, 4], r: 0.19 },
+  { joints: [5, 6, 7, 8], r: 0.155 },
+  { joints: [9, 10, 11, 12], r: 0.16 },
+  { joints: [13, 14, 15, 16], r: 0.15 },
+  { joints: [17, 18, 19, 20], r: 0.135 }
+];
+
+/* ผิวเดียวกับวัตถุ 3D ในฉากหลัง — พลาสติกเป่าลมสีอ่อน ไม่ใช่แก้ว */
+const SKIN = {
+  color: "#EBD3C0",
+  roughness: 0.32,
+  metalness: 0,
+  clearcoat: 0.9,
+  clearcoatRoughness: 0.22,
+  sheen: 0.6,
+  sheenColor: "#FFFFFF",
+  envMapIntensity: 1.1
+};
+
+/* ท่อนนิ้วหนึ่งข้อ — เรียวลงเล็กน้อยไปทางปลาย เหมือนนิ้วจริง */
+function Segment({ a, b, rA, rB }) {
   const ref = useRef();
   useFrame(() => {
     const m = ref.current;
     if (!m) return;
-    const a = from.current, b = to.current;
-    const dir = new THREE.Vector3().subVectors(b, a);
+    const p1 = a.current, p2 = b.current;
+    const dir = new THREE.Vector3().subVectors(p2, p1);
     const len = dir.length() || 0.0001;
-    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.position.copy(p1).addScaledVector(dir, 0.5);
     m.scale.set(1, len, 1);
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
   });
   return (
     <mesh ref={ref}>
-      <cylinderGeometry args={[radius, radius, 1, 14]} />
-      <Skin />
+      <cylinderGeometry args={[rB, rA, 1, 16]} />
+      <meshPhysicalMaterial {...SKIN} />
     </mesh>
   );
 }
 
-function Joint({ at, radius }) {
+function Knuckle({ at, r }) {
   const ref = useRef();
   useFrame(() => { if (ref.current) ref.current.position.copy(at.current); });
   return (
     <mesh ref={ref}>
-      <sphereGeometry args={[radius, 20, 20]} />
-      <Skin />
+      <sphereGeometry args={[r, 20, 20]} />
+      <meshPhysicalMaterial {...SKIN} />
     </mesh>
   );
 }
 
-/* ผิวเดียวกับวัตถุ 3D ในฉากหลัง — พลาสติกเป่าลมสีอ่อน ไม่ใช่แก้ว */
-function Skin() {
+/* ฝ่ามือ — ก้อนเดียวที่พาดจากข้อมือถึงแถวโคนนิ้ว
+   นี่คือส่วนที่ขาดไปรอบก่อน และเป็นเหตุผลเดียวที่ทำให้มันไม่อ่านเป็นมือ */
+function Palm({ pts }) {
+  const ref = useRef();
+  useFrame(() => {
+    const g = ref.current;
+    if (!g) return;
+    const wrist = pts[0].current;
+    const mid = pts[9].current;
+    const centre = new THREE.Vector3().addVectors(wrist, mid).multiplyScalar(0.5);
+    g.position.copy(centre);
+    const up = new THREE.Vector3().subVectors(mid, wrist);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up.clone().normalize());
+    const width = pts[5].current.distanceTo(pts[17].current) * 1.34;
+    const height = up.length() * 1.16;
+    g.scale.set(width, height, width * 0.52);
+  });
   return (
-    <meshPhysicalMaterial
-      color="#D6E8FC"
-      roughness={0.16}
-      metalness={0}
-      clearcoat={1}
-      clearcoatRoughness={0.07}
-      sheen={0.5}
-      sheenColor="#FFFFFF"
-      envMapIntensity={1.2}
-    />
+    <group ref={ref}>
+      <RoundedBox args={[1, 1, 1]} radius={0.34} smoothness={5}>
+        <meshPhysicalMaterial {...SKIN} />
+      </RoundedBox>
+    </group>
   );
 }
 
@@ -82,6 +116,7 @@ function Hand({ poseIndex }) {
   /* ตำแหน่งจริงที่วาดอยู่ตอนนี้ ค่อย ๆ วิ่งเข้าหาท่าเป้าหมาย
      การเปลี่ยนท่าแบบกระโดดทำให้ดูเหมือนสไลด์ ไม่ใช่มือที่ขยับ */
   const live = useRef(POSE_POINTS[0].map(v => v.clone()));
+  const refs = useMemo(() => live.current.map(v => ({ current: v })), []);
 
   useFrame((state, dt) => {
     const target = POSE_POINTS[poseIndex] || POSE_POINTS[0];
@@ -89,23 +124,27 @@ function Hand({ poseIndex }) {
     live.current.forEach((v, i) => v.lerp(target[i], k));
     if (group.current) {
       const t = state.clock.elapsedTime;
-      group.current.rotation.y = Math.sin(t * 0.5) * 0.28;
-      group.current.rotation.x = Math.sin(t * 0.34) * 0.1;
+      group.current.rotation.y = Math.sin(t * 0.45) * 0.2;
+      group.current.rotation.z = Math.sin(t * 0.31) * 0.05;
     }
   });
 
-  const refs = useMemo(
-    () => live.current.map(v => ({ current: v })),
-    []
-  );
-
   return (
-    <group ref={group}>
-      {HAND_BONES.map(([a, b], i) => (
-        <Bone key={i} from={refs[a]} to={refs[b]} radius={0.115} />
-      ))}
-      {refs.map((r, i) => (
-        <Joint key={i} at={r} radius={i === 0 ? 0.2 : 0.13} />
+    <group ref={group} position={[0, -0.15, 0]}>
+      <Palm pts={refs} />
+      {FINGERS.map((f, fi) => (
+        <group key={fi}>
+          {f.joints.slice(0, -1).map((j, si) => (
+            <Segment
+              key={si}
+              a={refs[j]} b={refs[f.joints[si + 1]]}
+              rA={f.r * (1 - si * 0.1)} rB={f.r * (1 - (si + 1) * 0.1)}
+            />
+          ))}
+          {f.joints.map((j, si) => (
+            <Knuckle key={si} at={refs[j]} r={f.r * (1 - si * 0.12)} />
+          ))}
+        </group>
       ))}
     </group>
   );
@@ -117,15 +156,16 @@ export default function HandPose3D({ poseIndex = 0, className = "" }) {
       <Canvas
         dpr={[1, 1.6]}
         gl={{ antialias: true, alpha: true }}
-        camera={{ position: [0, 0, 5], fov: 38 }}
+        camera={{ position: [0, 0, 4.6], fov: 38 }}
       >
         <Suspense fallback={null}>
-          <ambientLight intensity={1.4} />
-          <directionalLight position={[2, 3, 4]} intensity={2.2} />
+          <ambientLight intensity={1.1} />
+          <directionalLight position={[2, 3, 4]} intensity={2.4} />
+          <directionalLight position={[-3, -1, 2]} intensity={0.9} color="#CFE0FF" />
           <Environment resolution={128}>
-            <Lightformer form="rect" intensity={5} color="#ffffff"
+            <Lightformer form="rect" intensity={4} color="#ffffff"
                          position={[0, 3, 2]} scale={[5, 3, 1]} rotation={[-Math.PI / 3, 0, 0]} />
-            <Lightformer form="circle" intensity={3} color="#BFDCFF"
+            <Lightformer form="circle" intensity={2.4} color="#CFE0FF"
                          position={[-3, 0, 2]} scale={[3, 3, 1]} />
           </Environment>
           <Hand poseIndex={poseIndex} />

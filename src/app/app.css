@@ -12,28 +12,14 @@
 .grid-line { stroke: var(--line-soft); stroke-width: 1; opacity: .6; }
 .grid-tick line { stroke: var(--line); stroke-width: 1; opacity: .55; }
 
-/* พื้นแสงหักเห — CSS ล้วน ไม่มีไฟล์ภาพให้โหลดเพิ่มแม้แต่ไบต์เดียว */
+/* พื้นหลัง — ไล่เฉดนุ่ม ๆ กับแสงนวลจุดเดียว ไม่มีลำแสงเคลื่อนไหวแล้ว
+   ลำแสงที่เคยวิ่งผ่านหลังตัวอักษรทำให้ความคมชัดเปลี่ยนไปมาจนอ่านยาก
+   ฉากหลังมีหน้าที่รองเนื้อหา ไม่ใช่แข่งกับเนื้อหา */
 body::before {
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(120% 90% at 16% 4%, var(--paper-2) 0%, transparent 56%),
-    radial-gradient(80% 60% at 92% 26%, var(--paper-2) 0%, transparent 52%);
-}
-body::after {
-  content: ""; position: fixed; inset: -30% -10%; z-index: 0; pointer-events: none;
-  background: linear-gradient(104deg,
-    transparent 0 13%, rgba(255,255,255,.4) 15% 18%,
-    transparent 20% 33%, rgba(255,255,255,.28) 35% 37%,
-    transparent 39% 55%, rgba(255,255,255,.34) 57% 61%,
-    transparent 63% 77%, rgba(255,255,255,.2) 79% 82%, transparent 84%);
-  filter: blur(22px);
-  opacity: .55;
-  animation: drift 40s ease-in-out infinite alternate;
-}
-[data-theme="night"] body::after, [data-theme="night"]::after { opacity: .1; }
-@keyframes drift {
-  from { transform: translate3d(-3%, -1%, 0) rotate(-1deg); }
-  to   { transform: translate3d(4%, 2%, 0) rotate(1.4deg); }
+    radial-gradient(90% 60% at 78% 12%, var(--paper-2) 0%, transparent 62%),
+    linear-gradient(178deg, var(--paper-2) 0%, var(--paper) 46%, var(--paper-3) 100%);
 }
 
 /* ---------- เคอร์เซอร์ ---------- */
@@ -50,55 +36,84 @@ body::after {
 @media (hover: none), (pointer: coarse) { .cursor { display: none; } }
 
 /* ---------- โครง ---------- */
+/* ทั้งแอปล็อกความสูงเท่าจอ ไม่มีการเลื่อนหน้าเลย
+   ฉากไหนที่เนื้อหายาวกว่าจอ ให้เลื่อนภายในกล่องของตัวเองแทน */
 .app {
   position: relative; z-index: 2;
-  min-height: 100svh;
-  display: grid; grid-template-rows: auto 1fr auto;
+  height: 100svh; overflow: hidden;
+  display: grid; grid-template-rows: auto minmax(0, 1fr);
 }
 /* หน้าคำถามล็อกความสูงเท่าจอพอดี ทุกอย่างจึงอยู่ในสายตาโดยไม่ต้องเลื่อน
    ฉากอื่นยังใช้ min-height ตามเดิม เนื้อหายาวแค่ไหนก็เลื่อนอ่านได้ */
-[data-screen="survey"] .app { height: 100svh; }
-[data-screen="survey"] body { overflow: hidden; }
+/* สองฉากนี้ถูกออกแบบให้จบในจอเดียว จึงล็อกความสูงเท่าจอ
+   ฉากอื่นยังใช้ min-height ตามเดิม เนื้อหายาวแค่ไหนก็เลื่อนอ่านได้ */
 
+
+/* แถบบนและแถบล่างเป็นกระจกขุ่น แยกตัวจากเนื้อหาที่เลื่อนอยู่ข้างหลัง
+   และทำให้ปุ่มควบคุมอ่านออกเสมอไม่ว่าอะไรจะอยู่ใต้มัน */
 .bar {
+  position: sticky; top: 0; z-index: 8;
   display: flex; align-items: center; gap: var(--s3);
   min-height: var(--bar);
   padding: var(--s3) max(var(--pad), env(safe-area-inset-right))
            var(--s3) max(var(--pad), env(safe-area-inset-left));
   padding-top: calc(var(--s3) + env(safe-area-inset-top));
+  background: var(--surface);
+  backdrop-filter: blur(18px) saturate(1.2);
   border-bottom: 1px solid var(--line-soft);
 }
 .bar__gap { flex: 1; }
 .brand {
   display: inline-flex; align-items: center; gap: var(--s2);
   font-size: var(--t-tag); font-weight: 600; white-space: nowrap;
+  padding: var(--s1) var(--s2); margin-left: calc(var(--s2) * -1);
+  border-radius: 999px; cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease);
 }
+@media (hover: hover) { .brand:hover { background: var(--paper-2); color: var(--blue); } }
 .brand svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.sw__short { display: none; }
+
+/* ปุ่มบนแถบบน — ไอคอนนำ คำกำกับตามบนจอกว้าง */
+.navbtn {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  min-height: 38px; padding: 0 var(--s3);
+  border-radius: 999px; cursor: pointer;
+  font-size: var(--t-tag); font-weight: 500; color: var(--ink-2);
+  border: 1px solid transparent;
+  transition: background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease);
+}
+.navbtn .icon { flex: 0 0 auto; }
+@media (hover: hover) {
+  .navbtn:hover { background: var(--paper-2); color: var(--ink); border-color: var(--line-soft); }
+}
+.navbtn.is-on { background: var(--blue); color: #fff; border-color: var(--blue); }
+/* ปิดกล้องคือสถานะที่ผิดจากปกติ ทำเครื่องหมายไว้ให้เห็นว่ายังปิดอยู่ */
+.navbtn.is-off { color: var(--ink-3); border-color: var(--line); background: var(--paper-2); }
+@media (max-width: 44rem) {
+  .navbtn__t { display: none; }
+  .navbtn { padding: 0 var(--s2); }
+}
+
+/* จอแคบไม่มีที่พอสำหรับชื่อแอปเต็ม ๆ กับสวิตช์สามตัว
+   ตราสัญลักษณ์บอกได้ว่าเป็นแอปอะไรอยู่แล้ว */
+@media (max-width: 30rem) {
+  .bar { gap: var(--s1); }
+  .brand__text { display: none; }
+}
 
 .main {
-  display: grid; min-height: 0;
+  display: grid; min-height: 0; overflow: hidden; align-items: center;
   padding: 0 max(var(--pad), env(safe-area-inset-right))
            0 max(var(--pad), env(safe-area-inset-left));
 }
 
-.tele {
-  display: grid; grid-template-columns: 1fr auto 1fr;
-  align-items: center; gap: var(--s3);
-  min-height: var(--bar);
-  padding: var(--s3) max(var(--pad), env(safe-area-inset-right))
-           calc(var(--s3) + env(safe-area-inset-bottom)) max(var(--pad), env(safe-area-inset-left));
-  border-top: 1px solid var(--line-soft);
-}
-.tele__mid { justify-self: center; }
-.tele__end { justify-self: end; display: flex; align-items: center; gap: var(--s4); }
-@media (max-width: 48rem) {
-  .tele { grid-template-columns: 1fr auto; }
-  .tele__mid { display: none; }
-}
+.bar__net { color: var(--vermeil, #C2410C); font-weight: 500; }
 
 .screen {
   width: 100%; max-width: 76rem; margin-inline: auto;
-  padding-block: var(--s6);
+  height: 100%; min-height: 0;
+  padding-block: var(--s5);
   animation: rise .5s var(--out) both;
 }
 @keyframes rise {
@@ -108,10 +123,8 @@ body::after {
 
 /* ---------- ผังดวง ---------- */
 .plate { display: block; width: 100%; height: auto; }
-.plate__frame { fill: none; stroke: var(--line); stroke-width: 1; }
 .plate__ring { fill: none; stroke: var(--line-soft); stroke-width: 1; }
 .plate__spoke { stroke: var(--line-soft); stroke-width: 1; }
-.plate__corner { fill: var(--ink); opacity: .3; }
 .plate__area {
   fill: var(--blue); fill-opacity: .2;
   stroke: var(--blue); stroke-width: 2.2; stroke-linejoin: round;
@@ -128,48 +141,108 @@ body::after {
   font-family: var(--mono); font-size: 8px;
   fill: var(--blue); text-anchor: middle; dominant-baseline: middle;
 }
+.plate__icon { opacity: .78; transition: opacity .4s var(--ease); }
+.plate__icon.is-lead { opacity: 1; }
 
-/* ---------- หน้าเปิด ---------- */
+/* ---------- หน้าเปิด ----------
+   แผ่นผังดวงเป็นตัวเอก ตัวหนังสือชิดซ้าย ภาพอยู่ขวา
+   จอแคบเรียงลงโดยให้ภาพอยู่บนสุด เพราะมันดึงสายตาได้ก่อนตัวหนังสือ */
 .intro {
-  min-height: calc(100svh - var(--bar) * 2);
-  display: grid; grid-template-rows: auto 1fr; gap: var(--s7);
-  align-content: start;
+  display: grid; grid-template-columns: 1fr;
+  grid-template-areas: "art" "text";
+  align-content: center; gap: var(--s5);
+  overflow: hidden;
 }
-.intro__top {
-  display: grid; gap: var(--s5);
-  padding-bottom: var(--s5); border-bottom: 1px solid var(--line-soft);
+.intro__text { grid-area: text; display: grid; gap: var(--s4); justify-items: start; }
+.intro__eyebrow { color: var(--blue); }
+
+.intro__title {
+  display: grid;
+  font-size: clamp(1.875rem, 5.6vh + .4rem, 4.25rem);
+  font-weight: 700; line-height: 1.16; letter-spacing: -.018em;
 }
-.intro__plate { width: 148px; }
-.intro__col { display: grid; gap: var(--s2); max-width: 32ch; }
-.intro__hero { align-self: end; display: grid; gap: var(--s4); justify-items: start; }
-.intro__title { display: grid; }
 .intro__title em { font-style: normal; color: var(--blue); }
+.intro__lede {
+  font-size: clamp(.9375rem, 1.6vh + .35rem, 1.1875rem);
+  line-height: 1.7; color: var(--ink-2); max-width: 34ch;
+}
+
 .facts { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .facts li {
   padding: var(--s1) var(--s4);
   border: 1px solid var(--line); border-radius: 999px;
   color: var(--ink-2); font-weight: 500;
+  background: var(--surface);
 }
-.intro__actions { margin-top: var(--s3); }
+.intro__actions { display: flex; flex-wrap: wrap; gap: var(--s3); }
 
-@media (min-width: 48rem) {
-  .intro__top { grid-template-columns: 148px 1fr 1fr; gap: var(--s7); align-items: start; }
+
+
+/* ภาพหลัก — แผ่นผังดวงบนแสงนวลกลม */
+.intro__art {
+  grid-area: art; position: relative;
+  display: grid; place-items: center;
+  min-height: 0; width: 100%;
+}
+/* มือ 3D ซ้อนอยู่หน้าผังดวงจาง ๆ
+   ผังดวงบอกปลายทาง มือบอกวิธีไปถึง ทั้งคู่อยู่ในภาพเดียว */
+.intro__art .plate { position: relative; width: min(64vw, 38vh, 330px); height: auto; }
+.intro__halo {
+  position: absolute; width: 130%; aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--surface-2) 0%, transparent 66%);
+  animation: breathe 7s ease-in-out infinite alternate;
+}
+@keyframes breathe {
+  from { transform: scale(.92); opacity: .7; }
+  to   { transform: scale(1.06); opacity: 1; }
+}
+
+/* จอแคบต้องบีบทุกระดับพร้อมกัน ไม่ใช่ลดอย่างใดอย่างหนึ่ง
+   เพราะเนื้อหาหกก้อนรวมกันเกินความสูงจอไปราวสองร้อยพิกเซล */
+@media (max-width: 34rem) {
+  .intro { gap: var(--s4); }
+  .intro__text { gap: var(--s3); }
+  .intro__title { font-size: clamp(1.625rem, 4.4vh + .3rem, 2.375rem); }
+  .intro__lede { font-size: .9375rem; line-height: 1.6; }
+  .intro__art .plate { width: min(58vw, 27vh, 235px); }
+  .facts li { padding: 2px var(--s3); }
+  .btn { min-height: 48px; }
+}
+
+@media (min-width: 52rem) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
+    grid-template-areas: "text art";
+    gap: var(--s8); align-items: center;
+  }
+  .intro__art .plate { width: min(38vw, 60vh, 420px); }
+}
+
+/* จอเตี้ยมาก (มือถือแนวนอน) ตัดสิ่งที่ไม่จำเป็นออกให้เหลือทางเข้าเกม */
+@media (max-height: 30rem) {
+  .intro__art { display: none; }
+  .facts { display: none; }
+  .intro { grid-template-areas: "text"; }
 }
 
 /* ---------- หน้าคำถาม ----------
    ทุกอย่างอยู่ในจอเดียว ผู้เล่นจะได้ตอบด้วยมืออย่างเดียวโดยไม่ต้องเลื่อน
    จอแนวตั้งเรียงลงเป็นแถวกลาง จอแนวนอนแยกกล้องไปคอลัมน์ซ้าย */
+/* การ์ดหดตามเนื้อหาแล้ววางกึ่งกลางแนวตั้ง ไม่ยืดเต็มจอ
+   เคยตั้ง height: 100% แล้วได้การ์ดสูงเต็มจอที่มีที่ว่างก้อนใหญ่บนล่าง */
 .screen--fit {
-  height: 100%; min-height: 0; overflow: hidden;
-  padding: var(--s4); margin-block: var(--s3);
+  height: auto; max-height: 100%; min-height: 0;
+  align-self: center; overflow: hidden;
+  padding: var(--s5); margin-block: var(--s3);
 }
 
 .survey {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   /* กล้องได้พื้นที่ที่เหลือทั้งหมด แต่ยุบได้ถึง 84px เมื่อข้อนั้นมีตัวเลือกเยอะ
-     ตัวเลือกจึงไม่เคยถูกบีบจนอ่านไม่ออก ไม่ว่าจะสี่ข้อหรือหกข้อ */
-  grid-template-rows: auto auto minmax(84px, 1fr) auto;
+     ตัวเลือกจึงไม่เคยถูกบีบจนอ่านไม่ออก ไม่ว่าจะสามข้อหรือห้าข้อ */
+  grid-template-rows: auto auto auto auto;
   grid-template-areas: "head" "stem" "cam" "answers";
   gap: var(--s4);
   text-align: center;
@@ -194,6 +267,7 @@ body::after {
 }
 
 .survey__cam { grid-area: cam; min-height: 0; width: 100%; display: grid; justify-items: center; }
+.cam { width: 100%; max-width: 100%; }
 .survey__answers { grid-area: answers; width: 100%; display: grid; gap: var(--s3); }
 
 /* ตัวเลือกเป็นปุ่มมีขอบเรียงลง แตะง่ายและแยกจากกันชัด
@@ -233,8 +307,7 @@ body::after {
    ซึ่งพอดีกับเนื้อหาจริง เพราะข้อที่มีตัวเลือกเยอะใช้ข้อความสั้นกว่าอยู่แล้ว */
 .choices[data-count="4"] .choice__text,
 .choices[data-count="3"] .choice__text { -webkit-line-clamp: 3; }
-.choices[data-count="5"] .choice__text,
-.choices[data-count="6"] .choice__text { -webkit-line-clamp: 2; }
+.choices[data-count="5"] .choice__text { -webkit-line-clamp: 2; }
 @media (hover: hover) {
   .choice:hover { border-color: var(--ink); transform: translateY(-1px); }
   .choice:hover .choice__key { background: var(--ink); color: var(--paper); border-color: var(--ink); }
@@ -250,7 +323,24 @@ body::after {
   background: var(--blue); color: #fff; border-color: var(--blue); transform: scale(1.1);
 }
 
-.survey__tools { display: flex; align-items: center; justify-content: center; gap: var(--s5); }
+.survey__tools { display: flex; align-items: center; justify-content: center; gap: var(--s4); }
+
+/* ปุ่มเปิดปิดกล้อง — เคยเป็นตัวหนังสือ mono เฉย ๆ จึงไม่มีใครรู้ว่ากดได้
+   ตอนนี้มีขอบ มีไอคอน และเปลี่ยนสีตามสถานะ อ่านออกว่าเป็นปุ่มตั้งแต่แรกเห็น */
+.camtoggle {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  min-height: 40px; padding: 0 var(--s4);
+  border: 1px solid var(--line); border-radius: 99px;
+  background: transparent; color: var(--ink-2);
+  font-family: var(--sans); font-size: var(--t-tag); font-weight: 500;
+  cursor: pointer; transition: color .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+}
+.camtoggle .icon { flex: 0 0 auto; }
+.camtoggle.is-on { background: var(--blue); border-color: var(--blue); color: #fff; }
+@media (hover: hover) {
+  .camtoggle:hover { border-color: var(--blue); color: var(--blue); }
+  .camtoggle.is-on:hover { color: #fff; opacity: .9; }
+}
 
 /* ---------- เวทีกล้อง ---------- */
 .cam { height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--s2); }
@@ -291,91 +381,263 @@ body::after {
   position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s3);
   background: rgba(4, 6, 11, .92);
 }
-.cam__veil-in { display: grid; gap: var(--s2); justify-items: center; text-align: center; max-width: 22rem; }
+.cam__veil-in {
+  display: grid; gap: var(--s2); justify-items: center; text-align: center;
+  max-width: min(22rem, 100%);
+}
+.cam__veil-in .tag, .cam__veil-in .fine { max-width: 100%; }
 .cam__bar { width: min(180px, 70%); height: 3px; background: rgba(255, 255, 255, .2); border-radius: 99px; }
 .cam__bar i { display: block; height: 100%; background: #fff; border-radius: 99px; transition: width .25s var(--ease); }
-.cam__veil .btn { background: #fff; color: #04060B; border-color: #fff; min-height: 40px; padding: 0 var(--s4); font-size: var(--t-tag); }
+.cam__veil .btn {
+  background: #fff; color: #04060B; border-color: #fff;
+  min-height: 40px; padding: 0 var(--s4); font-size: var(--t-tag);
+  white-space: nowrap; max-width: 100%;
+}
 
 /* ---------- จอแนวนอนที่กว้างพอ ----------
    กล้องย้ายไปคอลัมน์ซ้ายเต็มความสูง เนื้อหาชิดซ้ายเพราะอ่านเป็นย่อหน้าง่ายกว่า */
 @media (min-width: 52rem) and (min-height: 34rem) {
   .survey {
-    grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 44%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
     grid-template-areas:
       "cam head"
       "cam stem"
       "cam answers";
     column-gap: var(--s7);
+    row-gap: var(--s4);
+    /* จัดทั้งสองคอลัมน์ให้อยู่กึ่งกลางแนวตั้ง ไม่ยืดแถวใดแถวหนึ่ง
+       ไม่งั้นเนื้อหาลอยอยู่บนแล้วเหลือที่ว่างก้อนใหญ่ข้างล่าง */
+    align-content: center;
     text-align: left;
     justify-items: stretch;
   }
-  .survey__cam { grid-area: cam; align-self: stretch; }
-  .cam__stage { aspect-ratio: auto; height: 100%; width: 100%; }
+  /* justify-items: center ของจอแคบทำให้กล้องไม่ยืดเต็มคอลัมน์
+     กลายเป็นกล่องเล็กลอยอยู่กลางที่ว่าง ต้องยกเลิกบนจอกว้าง */
+  .survey__cam { grid-area: cam; align-self: center; justify-items: stretch; }
+  .cam__stage { aspect-ratio: 4 / 3; width: 100%; height: auto; }
   .survey__stem { max-width: 34ch; font-size: clamp(1.25rem, 2.6vh + .4rem, 1.75rem); }
-  .survey__answers { align-self: center; }
   .survey__tools { justify-content: flex-start; }
-  .tally { width: clamp(88px, 22%, 140px); }
+  .tally { width: clamp(88px, 24%, 150px); }
+  .cam__hint { text-align: center; }
 }
 
-/* ---------- ฉากประมวลผล ---------- */
-.cast { display: grid; gap: var(--s5); justify-items: center; text-align: center; place-content: center;
-  min-height: calc(100svh - var(--bar) * 2); cursor: pointer; }
-.cast__plate { width: min(72vw, 320px); }
-.cast__step { color: var(--blue); min-height: 1.6em; }
-
-/* ---------- หน้าผลลัพธ์ ---------- */
-.result { display: grid; gap: var(--s6); justify-items: start; }
-.result__top { display: grid; gap: var(--s5); width: 100%; align-items: center; }
-.result__plate { width: min(74vw, 300px); }
-.result__title { display: grid; gap: var(--s3); }
-@media (min-width: 48rem) {
-  .result__top { grid-template-columns: 300px 1fr; gap: var(--s7); }
+/* ---------- ฉากประมวลผล ----------
+   เป็นหน้ารอจริง จึงบอกความคืบหน้าเป็นแถบพร้อมเปอร์เซ็นต์ และไล่รายการขั้นตอน
+   วงแหวนหมุนอย่างเดียวบอกได้แค่ว่า "ยังไม่ค้าง" แต่ไม่บอกว่าเหลืออีกเท่าไร */
+.cast {
+  display: grid; gap: var(--s4);
+  justify-items: center; text-align: center;
+  max-width: 30rem; cursor: pointer;
 }
 
-.card {
-  width: 100%; max-width: var(--measure);
-  background: var(--surface); backdrop-filter: blur(12px);
-  border: 1px solid var(--line-soft); border-radius: var(--r-lg);
-  padding: var(--s5); display: grid; gap: var(--s6);
-}
-.card__block { display: grid; gap: var(--s2); }
+.cast__plate { position: relative; width: min(56vw, 230px); }
 
-.chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+/* วงแหวนกวาดรอบผังดวง — สัญญาณ "กำลังทำงาน" ที่อ่านออกทันทีก่อนจะทันอ่านตัวหนังสือ
+   ใช้ mask เจาะไส้ออกให้เหลือเฉพาะขอบ จะได้ไม่บังกราฟข้างใน */
+.cast__ring {
+  position: absolute; inset: -7%; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 58%, var(--blue-2) 82%, var(--blue) 100%);
+  -webkit-mask: radial-gradient(circle, #0000 0 calc(50% - 3px), #000 calc(50% - 3px) 50%, #0000 50%);
+          mask: radial-gradient(circle, #0000 0 calc(50% - 3px), #000 calc(50% - 3px) 50%, #0000 50%);
+  animation: spin 1.6s linear infinite;
+  opacity: .85;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cast__title {
+  margin: 0; font-weight: 700;
+  font-size: clamp(1.125rem, 2.3vh + .3rem, 1.5rem);
+  line-height: var(--lh-head);
+}
+
+.cast__meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: var(--s3); width: 100%; }
+.cast__bar { height: 8px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+.cast__bar i { display: block; height: 100%; border-radius: 99px; background: var(--blue); }
+.cast__pct { color: var(--blue); font-size: var(--t-tag); min-width: 3.4ch; text-align: right; }
+
+.cast__steps {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--s2); justify-items: start; width: 100%;
+}
+.cast__step {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+  gap: var(--s3); text-align: left;
+  font-size: var(--t-tag); line-height: 1.5; color: var(--ink-3);
+  transition: color .3s var(--out);
+}
+.cast__step.is-done { color: var(--ink-2); }
+.cast__step.is-now  { color: var(--blue); font-weight: 600; }
+
+.cast__dot {
+  position: relative; width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--line); transition: border-color .3s var(--out), background .3s var(--out);
+}
+.cast__step.is-now .cast__dot { border-color: var(--blue); }
+.cast__step.is-now .cast__dot::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%;
+  background: var(--blue); animation: pip 1s ease-in-out infinite;
+}
+@keyframes pip { 50% { opacity: .25; transform: scale(.6); } }
+
+.cast__step.is-done .cast__dot { background: var(--blue); border-color: var(--blue); }
+.cast__step.is-done .cast__dot::after {
+  content: ""; position: absolute; inset: 0; margin: auto;
+  width: 4px; height: 7px; border: solid #fff; border-width: 0 1.8px 1.8px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cast__ring, .cast__step.is-now .cast__dot::after { animation: none; }
+}
+
+/* ---------- หน้าผลลัพธ์ ----------
+   สรุปให้จบในจอเดียว จัดกึ่งกลางเพราะเป็นหน้าประกาศผล ไม่ใช่หน้าอ่านยาว
+   คำอธิบายยาวไปอยู่หลังปุ่มรายละเอียด */
+.result {
+  display: grid; grid-auto-rows: min-content;
+  /* จัดกึ่งกลางแนวตั้งแทนการยืดแถวกลาง ไม่งั้นเกิดช่องว่างใหญ่กลางหน้า */
+  align-content: center; gap: var(--s4);
+  justify-items: center; text-align: center;
+}
+.result__head { display: grid; gap: var(--s2); justify-items: center; }
+.result__icon { width: clamp(44px, 7vh, 84px); height: auto; }
+.result__name {
+  font-size: clamp(1.375rem, 3vh + .5rem, 2.25rem);
+  font-weight: 700; line-height: 1.25; letter-spacing: -.012em;
+}
+.result__tag { font-size: var(--t-body); color: var(--ink-2); max-width: 34ch; }
+
+.result__body {
+  display: grid; gap: var(--s4); align-items: center;
+  width: 100%; min-height: 0;
+}
+.result__plate { width: min(44vw, 22vh, 180px); margin-inline: auto; min-height: 0; }
+.result__plate .plate { max-height: 100%; }
+
+.axes { display: grid; gap: var(--s2); width: 100%; max-width: 26rem; margin-inline: auto; }
+.axis { display: grid; grid-template-columns: 4.5rem 1fr 2.75rem; align-items: center; gap: var(--s3); }
+.axis__name { font-size: var(--t-tag); color: var(--ink-3); text-align: left; }
+.axis__track { height: 6px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+.axis__track i {
+  display: block; height: 100%; border-radius: 99px;
+  background: var(--blue); transition: width .9s var(--out);
+}
+.axis.is-lead .axis__name { color: var(--ink); font-weight: 700; }
+.axis.is-lead .axis__track i { background: var(--ink); }
+.axis__pct { text-align: right; }
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
 .chip {
   font-size: var(--t-tag); padding: var(--s1) var(--s3);
-  background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px;
+  background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 999px;
 }
 
-.bullets { display: grid; gap: var(--s3); }
-.bullets li { display: flex; gap: var(--s3); align-items: flex-start; }
+.result__actions {
+  display: flex; flex-wrap: wrap; gap: var(--s3);
+  align-items: center; justify-content: center;
+}
+
+@media (min-width: 52rem) and (min-height: 34rem) {
+  .result__body { grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: var(--s7); }
+  .result__plate { width: 100%; max-width: 240px; }
+  .axes { max-width: none; }
+}
+
+/* แผ่นรายละเอียดที่เลื่อนอ่านได้ เปิดทับเมื่อกดปุ่ม */
+.sheet {
+  position: fixed; inset: 0; z-index: 65;
+  display: grid; place-items: center; padding: var(--s4);
+  background: rgba(8, 14, 24, .5); backdrop-filter: blur(6px);
+  animation: fade .28s var(--ease) both;
+}
+.sheet__card {
+  width: min(56rem, 100%); max-height: calc(100svh - var(--s6));
+  padding: var(--s5);
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--s4);
+  text-align: left; animation: rise .4s var(--out) both;
+}
+.sheet__head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s4);
+  padding-bottom: var(--s3); border-bottom: 1px solid var(--line-soft);
+}
+.sheet__title { display: grid; gap: var(--s1); }
+.sheet__name { margin: 0; font-size: var(--t-md); line-height: var(--lh-head); font-weight: 700; }
+.sheet__scroll {
+  overflow: auto; overscroll-behavior: contain;
+  display: grid; gap: var(--s5); align-content: start;
+  padding-right: var(--s2);
+}
+.sheet__foot { display: flex; justify-content: flex-end; }
+
+/* จอกว้างแบ่งเนื้อหาเป็นสองคอลัมน์ แผ่นจะได้ไม่สูงจนต้องเลื่อนยาว
+   คอลัมน์แรกคือคำอ่านกับเหตุผล คอลัมน์สองคือจุดแข็งกับวิชาที่เรียน */
+@media (min-width: 46rem) {
+  .sheet { padding: var(--s5); }
+  .sheet__card { padding: var(--s6); }
+  .sheet__scroll { grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6); }
+}
+
+/* ปุ่มไอคอนกลม ๆ สำหรับปิดหน้าต่าง — พื้นที่กดใหญ่พอสำหรับนิ้วบนมือถือ */
+.iconbtn {
+  flex: 0 0 auto;
+  width: 40px; height: 40px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: color .2s var(--ease), border-color .2s var(--ease);
+}
+@media (hover: hover) { .iconbtn:hover { color: var(--blue); border-color: var(--blue); } }
+.card__block { display: grid; gap: var(--s2); }
+.bullets { display: grid; gap: var(--s2); }
+.bullets li { display: flex; gap: var(--s3); align-items: flex-start; text-align: left; }
 .bullets li::before {
   content: ""; flex: 0 0 6px; height: 6px; margin-top: .72em;
   background: var(--blue); border-radius: 50%;
 }
 
-.axes { display: grid; gap: var(--s4); }
-.axis { display: grid; grid-template-columns: 5.5rem 1fr 3rem; align-items: center; gap: var(--s3); }
-.axis__name { color: var(--ink-3); font-weight: 500; }
-.axis__track { height: 3px; background: var(--line); }
-.axis__track i { display: block; height: 100%; background: var(--blue); transition: width .9s var(--out); }
-.axis.is-lead .axis__name { color: var(--ink); font-weight: 700; }
-.axis.is-lead .axis__track { height: 6px; margin-block: -1.5px; }
-.axis.is-lead .axis__track i { background: var(--ink); }
-.axis__pct { text-align: right; }
-
-/* ---------- หน้ารวมหกสาย ---------- */
-.paths { display: grid; gap: var(--s6); justify-items: start; }
-.paths__head { display: grid; gap: var(--s3); }
-.paths__list { display: grid; width: 100%; max-width: var(--measure); }
-.path {
-  display: grid; grid-template-columns: 56px 1fr; gap: var(--s4);
-  align-items: start; padding: var(--s5) 0;
-  border-bottom: 1px solid var(--line-soft);
+/* ---------- หน้ารวมสายอาชีพ ----------
+   แปดใบอยู่ครบในจอเดียว ไม่มีการเลื่อน
+   จอกว้างมากพอแบ่งได้สี่คอลัมน์ สองแถวก็ครบ */
+.paths {
+  display: grid; grid-template-rows: auto auto auto;
+  gap: var(--s4); align-content: center; justify-items: stretch;
 }
-.path__glyph { width: 56px; }
-.path__body { display: grid; gap: var(--s2); }
-.path__tag { color: var(--ink-2); }
+.paths__head { display: grid; gap: var(--s1); justify-items: center; text-align: center; }
+.paths__title {
+  font-size: clamp(1.25rem, 3vh + .3rem, 1.875rem);
+  font-weight: 700; line-height: 1.3; letter-spacing: -.01em;
+}
+
+.paths__list {
+  display: grid; grid-template-columns: 1fr; gap: var(--s2);
+  min-height: 0;
+}
+.path {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s3);
+  align-items: center;
+  padding: var(--s3);
+  background: var(--paper-2); border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+}
+.path__glyph { width: clamp(34px, 5vh, 52px); height: auto; object-fit: contain; }
+.path__body { display: grid; gap: 2px; min-width: 0; }
+.path__name {
+  font-size: clamp(.9375rem, 1.6vh + .3rem, 1.125rem);
+  font-weight: 700; line-height: 1.35;
+}
+.path__tag {
+  font-size: clamp(.8125rem, 1.3vh + .25rem, .9375rem);
+  line-height: 1.45; color: var(--ink-2);
+}
+.path__jobs {
+  font-size: var(--t-tag); line-height: 1.4; color: var(--ink-3);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+.paths .row, .paths__back { justify-self: center; }
+
+@media (min-width: 34rem) { .paths__list { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 68rem) { .paths__list { grid-template-columns: repeat(4, 1fr); gap: var(--s3); } }
 
 /* ---------- แผงสถิติ ---------- */
 .panel {
@@ -409,3 +671,54 @@ th {
    ผู้เล่นยืนห่างจอ ตัวอักษรจึงต้องใหญ่กว่าปกติทุกระดับ */
 [data-mode="kiosk"] { --t-body: 1.1875rem; --t-tag: .9375rem; --t-lede: 1.3125rem; }
 
+
+/* ---------- บทเรียนสอนเล่น ----------
+   เปิดทับทั้งจอ เพราะเป็นสิ่งเดียวที่ผู้เล่นต้องอ่านในจังหวะนั้น */
+.tut {
+  position: fixed; inset: 0; z-index: 70;
+  display: grid; place-items: center;
+  padding: var(--s4);
+  background: rgba(8, 14, 24, .5);
+  backdrop-filter: blur(6px);
+  animation: fade .3s var(--ease) both;
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.tut__card {
+  width: min(30rem, 100%); max-height: calc(100svh - var(--s7));
+  overflow: auto; overscroll-behavior: contain;
+  padding: var(--s5);
+  display: grid; gap: var(--s4);
+  animation: rise .45s var(--out) both;
+}
+.tut__head { display: grid; gap: var(--s1); }
+
+/* มือ 3D กับตัวเลขที่กำลังชู วางคู่กันเพื่อให้เห็นความสัมพันธ์ทันที */
+.tut__demo {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  gap: var(--s4);
+  padding: var(--s3);
+  background: var(--paper-2); border-radius: var(--r-lg);
+}
+.hand3d { width: 100%; aspect-ratio: 5 / 4; min-height: 120px; max-height: 190px; }
+.hand3d canvas { display: block; }
+.tut__count { display: grid; justify-items: center; gap: var(--s1); min-width: 5.5rem; }
+.tut__count b { font-size: 3rem; line-height: 1; font-weight: 500; color: var(--blue); }
+
+.tut__steps { display: grid; gap: var(--s3); }
+.tut__steps li { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); align-items: start; }
+.tut__n {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  font-size: .8125rem; color: var(--paper); background: var(--ink); border-radius: 50%;
+}
+.tut__t { display: block; font-size: var(--t-body); font-weight: 700; line-height: 1.4; }
+.tut__note {
+  padding-top: var(--s3); border-top: 1px solid var(--line-soft);
+}
+.tut__go { width: 100%; }
+
+@media (max-width: 26rem) {
+  .tut__demo { grid-template-columns: 1fr auto; }
+  .tut__count b { font-size: 2.25rem; }
+  .tut__count { min-width: 4.5rem; }
+}

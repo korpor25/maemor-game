@@ -8,6 +8,8 @@
     "dev": "next dev",
     "build": "next build && node build/make-sw.mjs",
     "start": "next start",
+    "calibrate": "node build/calibrate.mjs",
+    "icons": "node build/fetch-icons.mjs",
     "verify": "node build/check-balance.mjs && node build/test-fingers.mjs",
     "check": "npm run build && npm run verify",
     "manual": "node build/make-manual.mjs",

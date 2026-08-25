@@ -1,31 +1,32 @@
 "use client";
 
-/* หน้ารวมหกสาย — ใช้เป็นเอกสารอ้างอิงหน้าบูธได้ด้วย
-   ตราของแต่ละสายคือผังดวงอันเดียวกันที่ยื่นออกคนละแกน */
+/* หน้ารวมแปดสาย — ใช้เป็นเอกสารอ้างอิงหน้าบูธได้ด้วย
+   ไอคอนมาจากชุด Fluent Emoji 3D ของ Microsoft (MIT) */
 
 import { PATHS, AXES } from "@/lib/data";
-import { PathGlyph } from "@/components/Plate";
+
 
 export default function Paths({ onBack }) {
   return (
-    <section className="screen paths">
+    <section className="screen screen--fit paths surface">
       <div className="paths__head">
         <p className="tag tag--blue">อ้างอิง</p>
-        <h2 className="lg">สายอาชีพทั้ง 6 แกน</h2>
-        <p className="lede">แต่ละตราคือผังดวงอันเดียวกัน ที่ยื่นออกเพียงแกนเดียว</p>
+        <h2 className="paths__title">สายอาชีพทั้ง 8 แกน</h2>
+        <p className="fine">ผลการสำรวจจะออกมาเป็นหนึ่งในแปดสายนี้</p>
       </div>
 
+      {/* สองคอลัมน์บนจอกว้าง แปดใบจึงอยู่ครบในจอเดียวโดยไม่ต้องเลื่อน
+          ตัดรายชื่อวิชาออกจากที่นี่ เพราะมีอยู่ในหน้ารายละเอียดผลอยู่แล้ว */}
       <ul className="paths__list">
-        {AXES.map((k, i) => {
+        {AXES.map(k => {
           const p = PATHS[k];
           return (
             <li key={k} className="path">
-              <PathGlyph axisIndex={i} total={AXES.length} className="path__glyph" />
+              <img className="path__glyph" src={p.icon} alt="" width={56} height={56} loading="lazy" />
               <div className="path__body">
-                <h3 className="md path__name">{p.name}</h3>
-                <p className="body path__tag">{p.tagline}</p>
-                <p className="fine"><b className="tag">อาชีพ</b> {p.jobs.join(" · ")}</p>
-                <p className="fine"><b className="tag">วิชาที่เรียน</b> {p.study}</p>
+                <h3 className="path__name">{p.name}</h3>
+                <p className="path__tag">{p.tagline}</p>
+                <p className="path__jobs">{p.jobs.join(" · ")}</p>
               </div>
             </li>
           );
