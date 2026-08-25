@@ -5,23 +5,19 @@
    เสิร์ฟจากแคชก่อนเสมอ แอปนี้ไม่มีข้อมูลจากเซิร์ฟเวอร์เลย แคชจึงเป็นแหล่งความจริงได้เต็มตัว
    เลขรุ่นคำนวณจากเนื้อไฟล์ พอมีไฟล์ไหนเปลี่ยน แคชเก่าจะถูกลบทั้งชุด */
 
-const VERSION = "0178673d24";
+const VERSION = "831ed332d3";
 const CACHE = "phangduang-" + VERSION;
 const ASSETS = [
   "./",
   "./app.webmanifest",
+  "./assets/fonts/anuphan-400-latin.woff2",
+  "./assets/fonts/anuphan-400-thai.woff2",
+  "./assets/fonts/anuphan-500-latin.woff2",
+  "./assets/fonts/anuphan-500-thai.woff2",
+  "./assets/fonts/anuphan-700-latin.woff2",
+  "./assets/fonts/anuphan-700-thai.woff2",
   "./assets/fonts/ibm-plex-mono-400-latin.woff2",
   "./assets/fonts/ibm-plex-mono-500-latin.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-400-latin.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-400-thai.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-500-latin.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-500-thai.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-600-latin.woff2",
-  "./assets/fonts/ibm-plex-sans-thai-600-thai.woff2",
-  "./assets/fonts/trirong-400-latin.woff2",
-  "./assets/fonts/trirong-400-thai.woff2",
-  "./assets/fonts/trirong-600-latin.woff2",
-  "./assets/fonts/trirong-600-thai.woff2",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
   "./assets/icons/icon-maskable-512.png",
@@ -31,6 +27,7 @@ const ASSETS = [
   "./src/data.js",
   "./src/fonts.css",
   "./src/hands.js",
+  "./src/motion.js",
   "./src/stats.js",
   "./src/styles.css"
 ];

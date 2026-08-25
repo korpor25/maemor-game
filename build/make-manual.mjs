@@ -20,19 +20,17 @@ const N = AXES.length;
    ใช้ชุดโหมดกลางวันของแอป แต่พื้นเป็นขาวจริง
    คู่มือนี้จะถูกพิมพ์ด้วยเครื่องพิมพ์สำนักงาน พื้นเข้มเต็มหน้าจะกินหมึกมหาศาล
    และเครื่องพิมพ์ส่วนใหญ่พิมพ์ไม่ถึงขอบกระดาษอยู่แล้ว */
-const INK = "#241F16";
-const INK_SOFT = "#6C6353";
-const BRASS = "#7A5A14";
-const VERMEIL = "#A8324C";
-const RULE = "#D8CDB4";
+const INK = "#0A0B0D";
+const INK_SOFT = "#4C535C";
+const BRASS = "#1B4FB0";      // สีเน้นของระบบ คงชื่อเดิมไว้เพื่อไม่ต้องแก้ทุกจุดที่อ้างถึง
+const VERMEIL = "#2E6FDF";
+const RULE = "#CBD8E4";
 
 /* ---------- ฝังฟอนต์ ---------- */
 const FONTS = [
-  ["Trirong", 400, ["trirong-400-thai", "trirong-400-latin"]],
-  ["Trirong", 600, ["trirong-600-thai", "trirong-600-latin"]],
-  ["Plex Thai", 400, ["ibm-plex-sans-thai-400-thai", "ibm-plex-sans-thai-400-latin"]],
-  ["Plex Thai", 500, ["ibm-plex-sans-thai-500-thai", "ibm-plex-sans-thai-500-latin"]],
-  ["Plex Thai", 600, ["ibm-plex-sans-thai-600-thai", "ibm-plex-sans-thai-600-latin"]],
+  ["Display", 700, ["anuphan-700-thai", "anuphan-700-latin"]],
+  ["Plex Thai", 400, ["anuphan-400-thai", "anuphan-400-latin"]],
+  ["Plex Thai", 500, ["anuphan-500-thai", "anuphan-500-latin"]],
   ["Plex Mono", 400, ["ibm-plex-mono-400-latin"]]
 ];
 const fontFaces = FONTS.flatMap(([family, weight, files]) =>
@@ -369,15 +367,15 @@ ul,ol{list-style:none}
 
 .eyebrow{font-size:8.4pt;letter-spacing:.09em;color:${BRASS};margin-bottom:2mm}
 .cover{text-align:center;padding-bottom:5mm;margin-bottom:5mm;border-bottom:.5pt solid ${RULE}}
-.cover__title{font-family:"Trirong",serif;font-weight:600;font-size:34pt;line-height:1.1}
+.cover__title{font-family:"Display",sans-serif;font-weight:700;letter-spacing:-.02em;font-size:34pt;line-height:1.1}
 .cover__title em{font-style:normal;color:${BRASS}}
 .cover__sub{font-size:11pt;color:${INK_SOFT};margin-top:1.5mm}
 .cover__plate{width:52mm;margin:4mm auto 0}
 .cover__plate svg{width:100%;height:auto;display:block}
 
-.h2{font-family:"Trirong",serif;font-weight:600;font-size:15pt;color:${BRASS};
+.h2{font-family:"Display",sans-serif;font-weight:700;letter-spacing:-.02em;font-size:15pt;color:${BRASS};
   margin-bottom:3mm;line-height:1.3}
-.h3{font-family:"Trirong",serif;font-weight:600;font-size:11.5pt;
+.h3{font-family:"Display",sans-serif;font-weight:700;letter-spacing:-.02em;font-size:11.5pt;
   margin:6mm 0 2.5mm;line-height:1.35}
 .body{margin-bottom:2.5mm}
 .fine{font-size:8.6pt;color:${INK_SOFT};margin-top:1.5mm}
@@ -425,7 +423,7 @@ ul,ol{list-style:none}
 .card{display:grid;grid-template-columns:16mm 1fr;gap:4mm;align-items:start;
   border:.5pt solid ${RULE};border-radius:2mm;padding:3.4mm}
 .card__glyph svg{width:100%;height:auto;display:block}
-.card__name{font-family:"Trirong",serif;font-weight:600;font-size:12pt;color:${BRASS};
+.card__name{font-family:"Display",sans-serif;font-weight:700;letter-spacing:-.02em;font-size:12pt;color:${BRASS};
   display:block;line-height:1.35}
 .card__tag{font-size:9.4pt;margin:.6mm 0 1.6mm}
 .card__meta{font-size:8.8pt;color:${INK_SOFT};line-height:1.55}
@@ -454,7 +452,7 @@ ul,ol{list-style:none}
 .qs{display:grid;gap:4mm;margin-top:5mm}
 .q{break-inside:avoid}
 .q__domain{font-size:8.4pt;letter-spacing:.05em;color:${BRASS};font-weight:600}
-.q__stem{font-family:"Trirong",serif;font-weight:600;font-size:11pt;line-height:1.4;
+.q__stem{font-family:"Display",sans-serif;font-weight:700;letter-spacing:-.02em;font-size:11pt;line-height:1.4;
   margin:.6mm 0 1.8mm}
 .q__opts{display:grid;gap:1.4mm}
 .q__opts li{display:grid;grid-template-columns:5mm 1fr;gap:2mm;align-items:start;font-size:9.2pt}

@@ -5,7 +5,8 @@
    ============================================================ */
 
 import { PATHS, QUESTIONS, AXES, CEILING } from "./data.js";
-import { FateChart, renderPathGlyph, renderSkyRim } from "./chart.js";
+import { FateChart, renderPathGlyph } from "./chart.js";
+import { mountGrid, mountCursor, mountTelemetry, mountParallax, magnetic, revealLines } from "./motion.js";
 import { HandCounter, prefetchModel, HAND_BONES } from "./hands.js";
 import { appendLog, clearLog, renderPanel, downloadCsv } from "./stats.js";
 
@@ -36,8 +37,13 @@ function resetRun() {
 }
 resetRun();
 
+/* ---------- ชั้นบรรยากาศ ---------- */
+mountGrid($("grid"));
+mountCursor($("cursor"));
+mountTelemetry({ clock: $("teleClock"), coords: $("teleCoords") });
+mountParallax([...document.querySelectorAll("[data-orb]")]);
+
 /* ---------- แผ่นผังดวงทั้งสี่ที่ ---------- */
-renderSkyRim($("skyRim"));
 const chartIntro  = new FateChart($("plateIntro"),  AXIS_LABELS, { labels: true });
 const chartSurvey = new FateChart($("plateSurvey"), AXIS_LABELS, { labels: false, frame: false });
 const chartCast   = new FateChart($("plateCast"),   AXIS_LABELS, { labels: true });
@@ -439,22 +445,24 @@ function applyTheme(theme) {
   root.dataset.theme = theme;
   prefs.theme = theme;
   savePrefs();
-  $("btnTheme").textContent = theme === "night" ? "กลางวัน" : "กลางคืน";
+  /* ป้ายปุ่มบอกสถานะปัจจุบัน ไม่ใช่สิ่งที่จะเกิดขึ้นเมื่อกด
+     อ่านได้เหมือนแถบสถานะของเครื่องมือ ไม่ใช่ปุ่มคำสั่ง */
+  $("btnTheme").textContent = theme === "night" ? "THEME[NIGHT]" : "THEME[DAY]";
   document.querySelector('meta[name="theme-color"]')
-    .setAttribute("content", theme === "night" ? "#0B1026" : "#E9E0C9");
+    .setAttribute("content", theme === "night" ? "#0A0E16" : "#BED8EE");
 }
 
 function applyMode(mode) {
   root.dataset.mode = mode;
   prefs.mode = mode;
   savePrefs();
-  $("btnKiosk").textContent = mode === "kiosk" ? "โหมดมือถือ" : "โหมดบูธ";
+  $("btnKiosk").textContent = mode === "kiosk" ? "BOOTH[ON]" : "BOOTH[OFF]";
   syncCamera();
 }
 
 /* ?mode=kiosk ใน URL ชนะค่าที่จำไว้ ใช้ทำลิงก์แยกสำหรับเครื่องบูธได้ */
 const params = new URLSearchParams(location.search);
-applyTheme(params.get("theme") || prefs.theme || "night");
+applyTheme(params.get("theme") || prefs.theme || "day");
 applyMode(params.get("mode") || prefs.mode || "phone");
 
 /* ---------- คืนหน้าจอเองเมื่อไม่มีคนเล่นต่อ (เฉพาะโหมดบูธ) ---------- */
@@ -489,6 +497,7 @@ $("btnStart").addEventListener("click", startRun);
 $("btnAgain").addEventListener("click", startRun);
 $("btnBack").addEventListener("click", goBack);
 $("btnTheme").addEventListener("click", () => applyTheme(root.dataset.theme === "night" ? "day" : "night"));
+[$("btnStart"), $("btnAgain")].forEach(b => magnetic(b));
 $("btnKiosk").addEventListener("click", () => applyMode(root.dataset.mode === "kiosk" ? "phone" : "kiosk"));
 $("btnPaths").addEventListener("click", () => { renderPaths(); show("screen-paths"); });
 $("btnPathsFromIntro").addEventListener("click", () => { renderPaths(); show("screen-paths"); });
@@ -496,7 +505,7 @@ $("btnPathsBack").addEventListener("click", () => show(state.answers.length ? "s
 
 $("btnCamToggle").addEventListener("click", () => {
   camWanted = !camWanted;
-  $("btnCamToggle").textContent = camWanted ? "ปิดกล้อง" : "เปิดกล้อง";
+  $("btnCamToggle").textContent = camWanted ? "CAM[ON]" : "CAM[OFF]";
   if (!camWanted) hands?.closeCamera();
   syncCamera();
 });
@@ -554,9 +563,7 @@ addEventListener("keydown", e => {
 
 /* ---------- สถานะออนไลน์ ---------- */
 function syncNet() {
-  $("netState").textContent = navigator.onLine
-    ? "ใช้งานแบบออฟไลน์ได้"
-    : "ออฟไลน์อยู่ · ยังเล่นได้ตามปกติ";
+  $("netState").textContent = navigator.onLine ? "OFFLINE READY" : "OFFLINE";
 }
 addEventListener("online", syncNet);
 addEventListener("offline", syncNet);
@@ -601,3 +608,10 @@ addEventListener("resize", sizeSkeleton);
    ฉากเปิดถูกทำเป็น is-active ไว้ใน HTML แล้ว จึงไม่ต้องเรียก show() ซ้ำ */
 renderQuestion();
 syncCamera();
+/* พาดหัวหน้าเปิดเผยตัวทีละบรรทัด ต้องรอให้ฟอนต์โหลดเสร็จก่อน
+   ไม่งั้นการตัดบรรทัดจะคำนวณจากฟอนต์สำรองแล้วกลุ่มบรรทัดจะผิด
+   document.fonts ไม่มีในเบราว์เซอร์เก่าบางตัว จึงต้องมีทางถอย
+   ถ้าพลาดก็แค่ไม่มีแอนิเมชัน พาดหัวยังอ่านได้ตามปกติ */
+const revealTitle = () => { try { revealLines($("introTitle")); } catch { /* ปล่อยเป็นข้อความนิ่ง */ } };
+if (document.fonts?.ready) document.fonts.ready.then(revealTitle);
+else addEventListener("load", revealTitle);

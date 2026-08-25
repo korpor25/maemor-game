@@ -27,6 +27,8 @@ g.HTMLCanvasElement.prototype.getContext = () => ({
 });
 g.navigator.mediaDevices = { getUserMedia: async () => { throw new Error("no camera in test"); } };
 g.HTMLMediaElement.prototype.play = async () => { };
+g.document.fonts = { ready: Promise.resolve() };      // jsdom ไม่มี Font Loading API
+g.Element.prototype.animate = () => ({ finished: Promise.resolve(), cancel() { } });
 g.URL.createObjectURL = () => "blob:test";
 g.URL.revokeObjectURL = () => { };
 g.confirm = () => true;
@@ -87,8 +89,16 @@ step("แผ่นผังดวงหน้าเปิดถูกวาด",
   const n = $("plateIntro").querySelectorAll("polygon").length;
   if (n < 5) throw new Error("มี polygon แค่ " + n);
 });
-step("วงขอบแอสโตรเลบถูกวาด", () => {
-  if ($("skyRim").querySelectorAll("line").length !== 72) throw new Error("จำนวนขีดไม่ครบ 72");
+step("กริดเชิงเทคนิคถูกวาด", () => {
+  /* jsdom ไม่จัดหน้าจริง clientWidth จึงเป็นศูนย์และกริดจะข้ามการวาด
+     สิ่งที่ตรวจได้คือโครง svg ถูกสร้างไว้แล้ว ไม่ได้ตายตอน mount */
+  const svg = $("grid").querySelector("svg");
+  if (!svg) throw new Error("ไม่มี svg ในชั้นกริด");
+});
+step("แถบสถานะล่างเดินจริง", () => {
+  if (!/^GMT[+−]\d+ · \d\d:\d\d:\d\d$/.test($("teleClock").textContent))
+    throw new Error("นาฬิกาไม่ถูกรูปแบบ: " + $("teleClock").textContent);
+  if (!$("teleCoords").textContent.includes("X")) throw new Error("ไม่มีพิกัดเมาส์");
 });
 
 console.log("\nเล่นจนจบรอบ");

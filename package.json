@@ -11,10 +11,14 @@
     "dev": "npx --yes serve -l 4173 app/public",
     "qr": "node build/make-qr.mjs",
     "smoke": "node build/smoke.mjs",
-    "manual": "node build/make-manual.mjs"
+    "manual": "node build/make-manual.mjs",
+    "shots": "node build/shoot-app.mjs desktop && node build/shoot-app.mjs mobile"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.9.0",
     "qrcode": "^1.5.4"
   }
 }

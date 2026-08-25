@@ -221,10 +221,12 @@ export function renderPathGlyph(svg, axisIndex, total) {
   svg.setAttribute("viewBox", `0 0 ${SIZE} ${SIZE}`);
   svg.replaceChildren();
   svg.append(el("polygon", {
-    class: "plate__ring",
+    class: "plate__frame",
     points: polygonOf(new Array(total).fill(1), total)
   }));
-  const values = new Array(total).fill(0.26);
+  /* แกนที่เหลือต้องมีเนื้ออยู่บ้าง ไม่งั้นตราขนาดเล็กจะอ่านเป็นเส้นบาง ๆ
+     ไม่ใช่รูปหกเหลี่ยมที่ยื่นออกด้านเดียว */
+  const values = new Array(total).fill(0.36);
   values[axisIndex] = 1;
   svg.append(el("polygon", {
     class: "plate__area",
